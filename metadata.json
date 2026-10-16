@@ -1,0 +1,6 @@
+{
+  "name": "Rasel Babu Official Artist Website",
+  "description": "Official artist portal, music discography, photo gallery, tour updates, and booking for Bangladeshi singer and performer Rasel Babu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

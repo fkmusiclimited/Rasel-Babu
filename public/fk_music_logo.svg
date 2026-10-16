@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Magenta Background Gradient -->
+    <radialGradient id="magentaCircleGrad" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#a6006e"/>
+      <stop offset="65%" stop-color="#800055"/>
+      <stop offset="100%" stop-color="#550038"/>
+    </radialGradient>
+
+    <!-- Gold Ring & Letter Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffe666"/>
+      <stop offset="35%" stop-color="#ffcc00"/>
+      <stop offset="70%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+
+    <!-- Subtle White Letter F Gradient -->
+    <linearGradient id="whiteLetterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e5e7eb"/>
+    </linearGradient>
+
+    <!-- Drop Shadow Filter -->
+    <filter id="shadowFilter" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+
+    <filter id="glowGold" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- 1. Magenta Circular Badge -->
+  <circle cx="250" cy="250" r="230" fill="url(#magentaCircleGrad)"/>
+
+  <!-- 2. Outer Glow Ring Accent -->
+  <circle cx="250" cy="250" r="228" fill="none" stroke="#ffcc00" stroke-width="1.5" stroke-opacity="0.25"/>
+
+  <!-- 3. Central Emblem Container -->
+  <g transform="translate(250, 205)" filter="url(#shadowFilter)">
+    <!-- Gold / White Interlocking Ring -->
+    <!-- Gold Arc (Top-Right to Bottom-Right) -->
+    <circle cx="0" cy="0" r="110" fill="none" stroke="url(#goldGrad)" stroke-width="26"/>
+    <!-- White Inner Ring Arc (Right Side) -->
+    <path d="M 45 -100 A 110 110 0 0 1 70 85" fill="none" stroke="url(#whiteLetterGrad)" stroke-width="20" stroke-linecap="round"/>
+
+    <!-- Letter K (Radiant Gold) -->
+    <g id="letterK">
+      <!-- K Stem and Angled Arms -->
+      <polygon points="12,-48 34,-48 12,20 12,-48" fill="url(#goldGrad)"/>
+      <!-- Top arm of K -->
+      <polygon points="20,-15 72,-68 96,-48 44,8" fill="url(#goldGrad)"/>
+      <!-- Bottom arm of K -->
+      <polygon points="26,-2 52,22 84,68 56,68 8,14" fill="url(#goldGrad)"/>
+    </g>
+
+    <!-- Letter F (Clean White with 3D Bevel) -->
+    <g id="letterF" filter="url(#shadowFilter)">
+      <!-- Main Vertical Stem of F -->
+      <path d="M -75 -68 L -4 -68 L -4 -38 L -45 -38 L -45 -18 L -6 -18 L -6 12 L -45 12 L -45 68 L -75 68 Z" fill="url(#whiteLetterGrad)"/>
+    </g>
+  </g>
+
+  <!-- 4. Musical Note (White with gradient) -->
+  <g transform="translate(135, 345)" filter="url(#shadowFilter)">
+    <!-- Eighth note with stem and flag -->
+    <path d="M 12 18 C 12 24.6 6.6 30 0 30 C -6.6 30 -12 24.6 -12 18 C -12 11.4 -6.6 6 0 6 C 2.5 6 4.8 6.8 6.7 8.1 L 6.7 -16 C 6.7 -17 7.4 -18 8.4 -18.2 L 28 -22 C 29.5 -22.3 31 -21.1 31 -19.5 L 31 -4 C 23 -4 16 2 12 10 Z" fill="#ffffff"/>
+  </g>
+
+  <!-- 5. "MUSIC" Gold Typography -->
+  <text x="180" y="375" font-family="'Inter', 'Montserrat', 'Segoe UI', Arial, sans-serif" font-size="52" font-weight="900" fill="url(#goldGrad)" letter-spacing="3" filter="url(#shadowFilter)">
+    MUSIC
+  </text>
+
+  <!-- 6. "LIMITED" White Typography -->
+  <text x="210" y="415" font-family="'Inter', 'Montserrat', 'Segoe UI', Arial, sans-serif" font-size="24" font-weight="800" fill="#ffffff" letter-spacing="5">
+    LIMITED
+  </text>
+</svg>
