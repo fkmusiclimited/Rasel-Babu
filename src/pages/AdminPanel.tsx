@@ -56,7 +56,6 @@ import {
 import { UserRole, PhotoItem, NewsArticle, VideoItem, TourEvent, Product, OrderItem, HomepageSettings, DistributionInquiry, User } from '../types';
 import { extractYouTubeId } from './Videos';
 import { YearlyPointsGraph } from '../components/points/YearlyPointsGraph';
-import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import { compressImageFile } from '../utils/imageCompress';
 import { DeleteConfirmModal } from '../components/common/DeleteConfirmModal';
 
@@ -540,23 +539,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
             <p className="text-xs text-zinc-400">
               Sign in with administrative credentials to manage registrations, photos, albums, and Adsterra monetization.
             </p>
-          </div>
-
-          {/* Admin Google Sign-In */}
-          <div className="space-y-3">
-            <GoogleSignInButton
-              buttonText="Sign In with Admin Google Account"
-              onSuccess={() => {}}
-              onError={(msg) => setAdminLoginError(msg)}
-            />
-
-            <div className="relative flex items-center justify-center">
-              <div className="border-t border-zinc-800 w-full" />
-              <span className="bg-zinc-900 px-3 text-[10px] text-zinc-500 uppercase tracking-widest font-mono">
-                or admin credentials
-              </span>
-              <div className="border-t border-zinc-800 w-full" />
-            </div>
           </div>
 
           {adminLoginError && (

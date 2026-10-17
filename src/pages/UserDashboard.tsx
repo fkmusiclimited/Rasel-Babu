@@ -104,16 +104,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onNavigate }) => {
           <div className="flex gap-3 justify-center pt-2">
             <button
               onClick={() => onNavigate('/login')}
-              className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-black font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              className="px-6 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-black font-bold rounded-xl text-xs transition-colors cursor-pointer"
             >
-              Sign In to Fan Account
-            </button>
-            <button
-              onClick={() => onNavigate('/admin')}
-              className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-amber-500/30 rounded-xl text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <Shield className="w-3.5 h-3.5" />
-              <span>Admin Login</span>
+              Sign In to Your Account / লগইন
             </button>
           </div>
         </div>
@@ -172,17 +165,10 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onNavigate }) => {
               <p className="text-zinc-400">Initial Fan Reward: <span className="text-amber-400 font-bold">{myPoints} Points Reserved</span></p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-              <button
-                onClick={() => onNavigate('/admin')}
-                className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-amber-400 hover:text-black text-amber-300 border border-amber-500/40 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Shield className="w-4 h-4" />
-                <span>Admin Login Portal</span>
-              </button>
+            <div className="flex justify-center pt-2">
               <button
                 onClick={logout}
-                className="px-5 py-2.5 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-xs transition-colors cursor-pointer"
+                className="px-6 py-2.5 rounded-xl border border-zinc-800 text-zinc-300 hover:text-white bg-zinc-900 text-xs transition-colors cursor-pointer"
               >
                 Sign Out
               </button>

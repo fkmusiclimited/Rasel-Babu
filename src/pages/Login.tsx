@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, AlertCircle, KeyRound, Sparkles, Mail } from 'lucide-react';
-import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
+import { LogIn, AlertCircle, KeyRound, Sparkles, Mail, ShieldCheck } from 'lucide-react';
 
 interface LoginProps {
   onNavigate: (path: string) => void;
@@ -37,16 +36,13 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         setError(res.message);
       }
     } else {
+      // Secure verification: Admin -> Admin Dashboard, Fan -> User Dashboard
       if (res.user?.role === 'admin' || res.user?.role === 'manager') {
         onNavigate('/admin');
       } else {
         onNavigate('/dashboard');
       }
     }
-  };
-
-  const handleGoogleSuccess = () => {
-    onNavigate('/dashboard');
   };
 
   return (
@@ -63,7 +59,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
             Sign In / লগইন
           </h1>
           <p className="text-xs text-zinc-400">
-            Access Fan Member Dashboard or Executive Administration Panel
+            Admin ও ফ্যান মেম্বার লগইন — Email ও Password দিয়ে আপনার অ্যাকাউন্টে প্রবেশ করুন
           </p>
         </div>
 
@@ -88,24 +84,11 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
           </div>
         )}
 
-        {/* Login Form */}
+        {/* Unified Login Form */}
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 sm:p-8 space-y-5 shadow-xl">
-          
-          {/* Google Sign-In Button */}
-          <div className="space-y-3">
-            <GoogleSignInButton
-              buttonText="Continue with Google Account"
-              onSuccess={handleGoogleSuccess}
-              onError={(msg) => setError(msg)}
-            />
-
-            <div className="relative flex items-center justify-center">
-              <div className="border-t border-zinc-800 w-full" />
-              <span className="bg-zinc-900 px-3 text-[10px] text-zinc-500 uppercase tracking-widest font-mono">
-                or sign in with email
-              </span>
-              <div className="border-t border-zinc-800 w-full" />
-            </div>
+          <div className="flex items-center gap-2 pb-1 border-b border-zinc-800/80 text-xs text-amber-300 font-medium">
+            <ShieldCheck className="w-4 h-4 text-amber-400" />
+            <span>Secure Authentication (Admin & User)</span>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
