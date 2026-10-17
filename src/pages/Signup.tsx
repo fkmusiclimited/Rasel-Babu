@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { UserPlus, AlertCircle, CheckCircle2, ShieldAlert } from 'lucide-react';
-import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 
 interface SignupProps {
   onNavigate: (path: string) => void;
@@ -107,33 +106,13 @@ export const Signup: React.FC<SignupProps> = ({ onNavigate }) => {
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-3">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block text-center">
-                Quick Registration with Google:
-              </span>
-              <GoogleSignInButton
-                buttonText="Register with Google Identity"
-                onSuccess={() => onNavigate('/dashboard')}
-                onError={(msg) => setError(msg)}
-              />
-            </div>
-
-            <div className="relative flex items-center justify-center">
-              <div className="border-t border-zinc-800 w-full" />
-              <span className="bg-[#08080a] px-3 text-[10px] text-zinc-500 uppercase tracking-widest font-mono">
-                or complete application form
-              </span>
-              <div className="border-t border-zinc-800 w-full" />
-            </div>
-
-            <form onSubmit={handleSubmit} className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 sm:p-8 space-y-4 shadow-xl">
-              {error && (
-                <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-200 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
+          <form onSubmit={handleSubmit} className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 sm:p-8 space-y-4 shadow-xl">
+            {error && (
+              <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-200 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -241,8 +220,7 @@ export const Signup: React.FC<SignupProps> = ({ onNavigate }) => {
               </button>
             </div>
           </form>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );
