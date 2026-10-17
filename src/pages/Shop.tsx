@@ -32,6 +32,7 @@ import {
   Camera,
 } from 'lucide-react';
 import { Product, OrderItem, UserMessage } from '../types';
+import { TRADITIONAL_PUNJABI_IMAGE } from '../data/seedData';
 
 export const Shop: React.FC = () => {
   const {
@@ -186,7 +187,7 @@ export const Shop: React.FC = () => {
     setFormOfferPrice(2700);
     setFormCurrency('BDT');
     setFormCategory('dress');
-    setFormImageUrl('/src/assets/images/rasel_babu_traditional_1791912894819.jpg');
+    setFormImageUrl(TRADITIONAL_PUNJABI_IMAGE);
     setFormExtraImg1('');
     setFormExtraImg2('');
     setFormExtraImg3('');
@@ -266,7 +267,7 @@ export const Shop: React.FC = () => {
         offerPrice: numericOffer,
         currency: formCurrency,
         category: formCategory,
-        imageUrl: formImageUrl || '/src/assets/images/rasel_babu_traditional_1791912894819.jpg',
+        imageUrl: formImageUrl || TRADITIONAL_PUNJABI_IMAGE,
         additionalImages,
         sizes: parsedSizes,
         description: formDescription,
@@ -831,7 +832,7 @@ export const Shop: React.FC = () => {
                         {/* Product Thumbnail */}
                         <div className="md:col-span-2">
                           <img
-                            src={associatedProduct?.imageUrl || '/src/assets/images/rasel_babu_traditional_1791912894819.jpg'}
+                            src={associatedProduct?.imageUrl || TRADITIONAL_PUNJABI_IMAGE}
                             alt={ord.productTitle}
                             className="w-20 h-20 rounded-xl object-cover border border-zinc-800"
                           />

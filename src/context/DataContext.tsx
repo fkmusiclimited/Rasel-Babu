@@ -209,7 +209,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [photos, setPhotos] = useState<PhotoItem[]>(() => {
     try {
       const saved = localStorage.getItem(PHOTOS_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: PhotoItem[] = JSON.parse(saved);
+        return parsed.map((p) => {
+          if (p.imageUrl?.startsWith('/src/assets/images/')) {
+            const match = INITIAL_PHOTOS.find((ip) => ip.id === p.id);
+            if (match) return { ...p, imageUrl: match.imageUrl };
+          }
+          return p;
+        });
+      }
     } catch (e) {
       console.error(e);
     }
@@ -220,7 +229,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [albums, setAlbums] = useState<Album[]>(() => {
     try {
       const saved = localStorage.getItem(ALBUMS_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: Album[] = JSON.parse(saved);
+        return parsed.map((a) => {
+          if (a.coverUrl?.startsWith('/src/assets/images/')) {
+            const match = INITIAL_ALBUMS.find((ia) => ia.id === a.id);
+            if (match) return { ...a, coverUrl: match.coverUrl };
+          }
+          return a;
+        });
+      }
     } catch (e) {
       console.error(e);
     }
@@ -245,13 +263,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (saved) {
         const parsed: Product[] = JSON.parse(saved);
         return parsed.map((p) => {
-          if (!p.additionalImages || p.additionalImages.length === 0) {
-            const initialMatch = INITIAL_PRODUCTS.find((init) => init.id === p.id);
-            if (initialMatch?.additionalImages) {
-              return { ...p, additionalImages: initialMatch.additionalImages };
-            }
+          const match = INITIAL_PRODUCTS.find((init) => init.id === p.id);
+          let imageUrl = p.imageUrl;
+          if (match && (!imageUrl || imageUrl.startsWith('/src/assets/images/'))) {
+            imageUrl = match.imageUrl;
           }
-          return p;
+          let additionalImages = p.additionalImages;
+          if (!additionalImages || additionalImages.length === 0) {
+            additionalImages = match?.additionalImages;
+          } else if (match?.additionalImages) {
+            additionalImages = additionalImages.map((img, idx) => {
+              if (img && img.startsWith('/src/assets/images/') && match.additionalImages?.[idx]) {
+                return match.additionalImages[idx];
+              }
+              return img;
+            });
+          }
+          return {
+            ...p,
+            imageUrl,
+            additionalImages,
+          };
         });
       }
     } catch (e) {
@@ -385,7 +417,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>(() => {
     try {
       const saved = localStorage.getItem(HOMEPAGE_SETTINGS_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: HomepageSettings = JSON.parse(saved);
+        if (parsed.heroImageUrl?.startsWith('/src/assets/images/')) {
+          parsed.heroImageUrl = INITIAL_HOMEPAGE_SETTINGS.heroImageUrl;
+        }
+        if (parsed.aboutImageUrl?.startsWith('/src/assets/images/')) {
+          parsed.aboutImageUrl = INITIAL_HOMEPAGE_SETTINGS.aboutImageUrl;
+        }
+        if (parsed.annualGiftImage?.startsWith('/src/assets/images/')) {
+          parsed.annualGiftImage = INITIAL_HOMEPAGE_SETTINGS.annualGiftImage;
+        }
+        return { ...INITIAL_HOMEPAGE_SETTINGS, ...parsed };
+      }
     } catch (e) {
       console.error(e);
     }

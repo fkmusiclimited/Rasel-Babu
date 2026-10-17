@@ -1,13 +1,24 @@
 import { PhotoItem, Album, VideoItem, NewsArticle, TourEvent, User, AdsterraConfig, AnalyticsStats, Product, OrderItem, HomepageSettings, DistributionInquiry, AnnualGiftConfig } from '../types';
 
-export const HERO_STAGE_IMAGE = '/src/assets/images/hero_rasel_babu_stage_1791912890551.jpg';
-export const STUDIO_IMAGE = '/src/assets/images/rasel_babu_studio_1791912892306.jpg';
-export const PORTRAIT_IMAGE = '/src/assets/images/rasel_babu_portrait_1791912893579.jpg';
-export const ALBUM_COVER_IMAGE = '/src/assets/images/album_cover_melodies_1791912892563.jpg';
-export const ACOUSTIC_STAGE_IMAGE = '/src/assets/images/rasel_babu_acoustic_live_1791914988781.jpg';
-export const TRADITIONAL_PUNJABI_IMAGE = '/src/assets/images/rasel_babu_traditional_punjabi_1791914989705.jpg';
-export const FAN_CONCERT_IMAGE = '/src/assets/images/rasel_babu_fan_concert_1791914990421.jpg';
-export const AWARD_GALA_IMAGE = '/src/assets/images/rasel_babu_award_gala_1791914990162.jpg';
+import HERO_STAGE_IMAGE from '../assets/images/hero_rasel_babu_stage_1791912890551.jpg';
+import STUDIO_IMAGE from '../assets/images/rasel_babu_studio_1791912892306.jpg';
+import PORTRAIT_IMAGE from '../assets/images/rasel_babu_portrait_1791912893579.jpg';
+import ALBUM_COVER_IMAGE from '../assets/images/album_cover_melodies_1791912892563.jpg';
+import ACOUSTIC_STAGE_IMAGE from '../assets/images/rasel_babu_acoustic_live_1791914988781.jpg';
+import TRADITIONAL_PUNJABI_IMAGE from '../assets/images/rasel_babu_traditional_punjabi_1791914989705.jpg';
+import FAN_CONCERT_IMAGE from '../assets/images/rasel_babu_fan_concert_1791914990421.jpg';
+import AWARD_GALA_IMAGE from '../assets/images/rasel_babu_award_gala_1791914990162.jpg';
+
+export {
+  HERO_STAGE_IMAGE,
+  STUDIO_IMAGE,
+  PORTRAIT_IMAGE,
+  ALBUM_COVER_IMAGE,
+  ACOUSTIC_STAGE_IMAGE,
+  TRADITIONAL_PUNJABI_IMAGE,
+  FAN_CONCERT_IMAGE,
+  AWARD_GALA_IMAGE,
+};
 
 export const INITIAL_USERS: User[] = [
   {
@@ -744,7 +755,7 @@ export const INITIAL_HOMEPAGE_SETTINGS: HomepageSettings = {
   fanClubDescription: 'Earn reward points through website engagement, merchandise purchases, and direct admin gift bonuses. The fan with the highest points in a year wins the Annual Grand Mega Gift!',
   annualGiftTitle: '🏆 Annual Fan of the Year Mega Gift (বার্ষিক সেরা ফ্যান মেগা গিফট)',
   annualGiftDescription: 'Autographed Fender Acoustic Guitar + Lifetime VIP All-Access Concert Pass + ৳৫০,০০০ গ্র্যান্ড গিফট হ্যাম্পার',
-  annualGiftImage: '/src/assets/images/rasel_babu_acoustic_live_1791914988781.jpg',
+  annualGiftImage: ACOUSTIC_STAGE_IMAGE,
   // Recent Success & Milestones section
   milestonesTitle: 'সাম্প্রতিক সাফল্য ও বিজয়ের মাইলফলক (Recent Victories & Achievements)',
   milestonesDescription: 'রাসেল বাবু সঙ্গীত, মডেলিং, অভিনয় এবং একাডেমিক ক্ষেত্রে ধারাবাহিক সাফল্য ও বিজয়ের মাধ্যমে তরুণ প্রজন্মের এক উজ্জ্বল অনুপ্রেরণা। তাঁর সাম্প্রতিক উল্লেখযোগ্য অর্জনসমূহ:',
@@ -833,7 +844,7 @@ export const INITIAL_ANNUAL_GIFT_CONFIG: AnnualGiftConfig = {
   year: 2026,
   giftTitle: '🏆 Annual Fan of the Year Mega Award (বার্ষিক সেরা ফ্যান মেগা গিফট)',
   giftDescription: 'Rasel Babu Autographed Fender Acoustic Guitar + All-Access VIP Lifetime Concert Pass + Luxury Trophy + ৳৫০,০০০ ফ্যান গ্র্যান্ড গিফট ভাউচার',
-  giftImageUrl: '/src/assets/images/rasel_babu_acoustic_live_1791914988781.jpg',
+  giftImageUrl: ACOUSTIC_STAGE_IMAGE,
   prizeValue: '৳ ১,০০,০০০+',
   status: 'active',
   winnerUserId: undefined,

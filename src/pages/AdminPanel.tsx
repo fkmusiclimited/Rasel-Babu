@@ -58,6 +58,7 @@ import { extractYouTubeId } from './Videos';
 import { YearlyPointsGraph } from '../components/points/YearlyPointsGraph';
 import { compressImageFile } from '../utils/imageCompress';
 import { DeleteConfirmModal } from '../components/common/DeleteConfirmModal';
+import { HERO_STAGE_IMAGE, TRADITIONAL_PUNJABI_IMAGE, PORTRAIT_IMAGE, STUDIO_IMAGE } from '../data/seedData';
 
 interface AdminPanelProps {
   onNavigate: (path: string) => void;
@@ -661,7 +662,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
       slug: newNewsData.slug || newNewsData.title.toLowerCase().replace(/[^a-z0-9]/g, '-'),
       summary: newNewsData.summary,
       content: newNewsData.content,
-      coverImage: newNewsData.coverImage || '/src/assets/images/hero_rasel_babu_stage_1791912890551.jpg',
+      coverImage: newNewsData.coverImage || HERO_STAGE_IMAGE,
       category: newNewsData.category,
       author: newNewsData.author,
       readTime: newNewsData.readTime,
@@ -748,7 +749,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     setProductFormOfferPrice(2750);
     setProductFormCurrency('BDT');
     setProductFormCategory('dress');
-    setProductFormImageUrl('/src/assets/images/rasel_babu_traditional_1791912894819.jpg');
+    setProductFormImageUrl(TRADITIONAL_PUNJABI_IMAGE);
     setProductExtraImg1('');
     setProductExtraImg2('');
     setProductExtraImg3('');
@@ -797,7 +798,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
       (img) => img && img.trim().length > 0
     );
 
-    const safeImageUrl = productFormImageUrl.trim() || '/src/assets/images/rasel_babu_traditional_1791912894819.jpg';
+    const safeImageUrl = productFormImageUrl.trim() || TRADITIONAL_PUNJABI_IMAGE;
 
     if (editingProductItem) {
       updateProduct(editingProductItem.id, {
@@ -3074,10 +3075,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                       <span className="text-[11px] font-mono text-zinc-400">Quick Image Presets:</span>
                       <div className="flex flex-wrap gap-2">
                         {[
-                          { label: 'Concert Stage Live', path: '/src/assets/images/rasel_babu_stage_1791912891040.jpg' },
-                          { label: 'Celebrity Portrait', path: '/src/assets/images/rasel_babu_portrait_1791912893579.jpg' },
-                          { label: 'Traditional Kurta', path: '/src/assets/images/rasel_babu_traditional_1791912894819.jpg' },
-                          { label: 'Studio Session', path: '/src/assets/images/rasel_babu_studio_1791912892306.jpg' },
+                          { label: 'Concert Stage Live', path: HERO_STAGE_IMAGE },
+                          { label: 'Celebrity Portrait', path: PORTRAIT_IMAGE },
+                          { label: 'Traditional Kurta', path: TRADITIONAL_PUNJABI_IMAGE },
+                          { label: 'Studio Session', path: STUDIO_IMAGE },
                         ].map((pr) => (
                           <button
                             key={pr.path}

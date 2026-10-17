@@ -21,6 +21,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { User } from '../../types';
+import { ACOUSTIC_STAGE_IMAGE } from '../../data/seedData';
 
 interface YearlyPointsGraphProps {
   isAdminView?: boolean;
@@ -51,7 +52,7 @@ export const YearlyPointsGraph: React.FC<YearlyPointsGraphProps> = ({
   const [giftEditPrizeVal, setGiftEditPrizeVal] = useState(annualGiftConfig.prizeValue || '৳ ১,০০,০০০+');
   const [giftEditYear, setGiftEditYear] = useState(annualGiftConfig.year || 2026);
   const [giftEditImage, setGiftEditImage] = useState(
-    annualGiftConfig.giftImageUrl || '/src/assets/images/rasel_babu_acoustic_live_1791914988781.jpg'
+    annualGiftConfig.giftImageUrl || ACOUSTIC_STAGE_IMAGE
   );
   const [giftEditStatus, setGiftEditStatus] = useState<'active' | 'awarded'>(annualGiftConfig.status || 'active');
   const [giftSaveAlert, setGiftSaveAlert] = useState<string | null>(null);

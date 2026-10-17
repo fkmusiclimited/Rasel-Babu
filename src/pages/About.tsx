@@ -2,6 +2,7 @@ import React from 'react';
 import { useData } from '../context/DataContext';
 import { AdSlot } from '../components/ads/AdSlot';
 import { Award, Music, Film, Mic, Sparkles, HeartHandshake, CheckCircle, Play } from 'lucide-react';
+import { PORTRAIT_IMAGE, STUDIO_IMAGE } from '../data/seedData';
 
 interface AboutProps {
   onNavigate: (path: string) => void;
@@ -30,7 +31,7 @@ export const About: React.FC<AboutProps> = ({ onNavigate }) => {
           <div className="lg:col-span-5 relative">
             <div className="relative aspect-[3/4] rounded-2xl overflow-hidden border border-amber-500/30 shadow-2xl shadow-black">
               <img
-                src={homepageSettings.aboutImageUrl || homepageSettings.heroImageUrl || "/src/assets/images/rasel_babu_portrait_1791912893579.jpg"}
+                src={homepageSettings.aboutImageUrl || homepageSettings.heroImageUrl || PORTRAIT_IMAGE}
                 alt="Rasel Babu Celebrity Portrait"
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
@@ -195,7 +196,7 @@ export const About: React.FC<AboutProps> = ({ onNavigate }) => {
           <div className="lg:col-span-5">
             <div className="rounded-2xl overflow-hidden border border-zinc-700 shadow-xl aspect-[4/3]">
               <img
-                src="/src/assets/images/rasel_babu_studio_1791912892306.jpg"
+                src={STUDIO_IMAGE}
                 alt="Rasel Babu in Studio"
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
