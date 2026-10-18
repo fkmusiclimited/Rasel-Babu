@@ -555,7 +555,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
               <input
                 type="email"
                 required
-                placeholder="fkbabu01@gmail.com"
+                placeholder="raselbabuwebsiteshop@gmail.com"
                 value={adminEmailInput}
                 onChange={(e) => setAdminEmailInput(e.target.value)}
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
@@ -883,7 +883,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold text-white truncate">{currentUser?.name || 'Rasel Babu Admin'}</div>
-                  <div className="text-[11px] text-zinc-400 font-mono truncate">{currentUser?.email || 'fkbabu01@gmail.com'}</div>
+                  <div className="text-[11px] text-zinc-400 font-mono truncate">{currentUser?.email || 'raselbabuwebsiteshop@gmail.com'}</div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span className="text-[10px] text-emerald-400 font-mono font-medium">Super Admin Online</span>
@@ -1069,7 +1069,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                   <div className="space-y-2">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-mono uppercase">
                       <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Rasel Babu Official Artist Control Center · fkbabu01@gmail.com</span>
+                      <span>Rasel Babu Official Artist Control Center · raselbabuwebsiteshop@gmail.com</span>
                     </div>
                     <h2 className="font-display text-2xl sm:text-3xl font-bold text-white">
                       Dashboard Overview (মূল ড্যাশবোর্ড)
@@ -1795,7 +1795,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                               Re-Approve
                             </button>
                           )}
-                          {u.status === 'approved' && u.email !== 'fkbabu01@gmail.com' && (
+                          {u.status === 'approved' &&
+                            u.email !== 'raselbabuwebsiteshop@gmail.com' &&
+                            u.email !== 'fkbabu01@gmail.com' && (
                             <button
                               onClick={() => rejectUser(u.id, 'Access revoked by administration')}
                               className="text-[11px] text-zinc-500 hover:text-red-400"

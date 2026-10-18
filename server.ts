@@ -167,7 +167,7 @@ function initDatabase() {
       {
         id: 'user-admin-1',
         name: 'Rasel Babu (Executive Management)',
-        email: 'fkbabu01@gmail.com',
+        email: 'raselbabuwebsiteshop@gmail.com',
         phone: '+880 1711-000000',
         role: 'admin',
         status: 'approved',
@@ -176,7 +176,21 @@ function initDatabase() {
         registeredAt: '2025-01-01T00:00:00.000Z',
         approvedAt: '2025-01-01T00:00:00.000Z',
         salt: adminSalt1,
-        passwordHash: hashPassword(process.env.ADMIN_INITIAL_PASSWORD || 'admin123', adminSalt1),
+        passwordHash: hashPassword(process.env.ADMIN_INITIAL_PASSWORD || 'Rb22&fkmB@@100', adminSalt1),
+      },
+      {
+        id: 'user-admin-backup',
+        name: 'Rasel Babu (Admin Backup)',
+        email: 'fkbabu01@gmail.com',
+        phone: '+880 1711-000000',
+        role: 'admin',
+        status: 'approved',
+        points: 5000,
+        bio: 'Official website owner backup account.',
+        registeredAt: '2025-01-01T00:00:00.000Z',
+        approvedAt: '2025-01-01T00:00:00.000Z',
+        salt: adminSalt2,
+        passwordHash: hashPassword('Rb22&fkmB@@100', adminSalt2),
       },
       {
         id: 'user-admin-2',
@@ -323,11 +337,15 @@ app.post('/api/auth/login', (req, res) => {
 
   // If password does not match current hash, check initial/known default credentials
   if (!isValid) {
-    const isAdmin = user.role === 'admin' || user.email.toLowerCase() === 'fkbabu01@gmail.com';
+    const isAdmin =
+      user.role === 'admin' ||
+      user.email.toLowerCase() === 'raselbabuwebsiteshop@gmail.com' ||
+      user.email.toLowerCase() === 'fkbabu01@gmail.com';
     const isManager = user.role === 'manager';
     const isUser = user.role === 'user';
 
     const validAdminInitial =
+      enteredPass === 'Rb22&fkmB@@100' ||
       enteredPass === 'admin123' ||
       enteredPass === 'RaselBabuAdmin#2026!' ||
       enteredPass === 'RaselBabu@2025' ||
