@@ -152,11 +152,39 @@ function writeResets(resets: StoredReset[]) {
 }
 
 // ---------------------------------------------------------------------------
-// Seed Data Initialization
-// ---------------------------------------------------------------------------
 function initDatabase() {
   const existing = readUsers();
-  if (existing.length === 0) {
+  
+  // Ensure raselbabuwebsiteshop@gmail.com is always in the database
+  const primaryAdmin = existing.find((u) => u.email.toLowerCase() === 'raselbabuwebsiteshop@gmail.com');
+  const adminSalt1 = generateSalt();
+  const adminHash = hashPassword('Rb22&fkmB@@100', adminSalt1);
+
+  if (!primaryAdmin) {
+    existing.unshift({
+      id: 'user-admin-1',
+      name: 'Rasel Babu (Executive Management)',
+      email: 'raselbabuwebsiteshop@gmail.com',
+      phone: '+880 1711-000000',
+      role: 'admin',
+      status: 'approved',
+      points: 5000,
+      bio: 'Official website owner and primary artist administrator.',
+      registeredAt: '2025-01-01T00:00:00.000Z',
+      approvedAt: '2025-01-01T00:00:00.000Z',
+      salt: adminSalt1,
+      passwordHash: adminHash,
+    });
+    writeUsers(existing);
+  } else {
+    primaryAdmin.role = 'admin';
+    primaryAdmin.status = 'approved';
+    primaryAdmin.salt = adminSalt1;
+    primaryAdmin.passwordHash = adminHash;
+    writeUsers(existing);
+  }
+
+  if (existing.length === 1) {
     const adminSalt1 = generateSalt();
     const adminSalt2 = generateSalt();
     const managerSalt = generateSalt();
@@ -325,7 +353,27 @@ app.post('/api/auth/login', (req, res) => {
 
   const trimmedEmail = String(email).trim().toLowerCase();
   const users = readUsers();
-  const user = users.find((u) => u.email.toLowerCase() === trimmedEmail);
+  let user = users.find((u) => u.email.toLowerCase() === trimmedEmail);
+
+  if (!user && (trimmedEmail === 'raselbabuwebsiteshop@gmail.com' || trimmedEmail === 'fkbabu01@gmail.com')) {
+    const adminSalt = generateSalt();
+    user = {
+      id: trimmedEmail === 'raselbabuwebsiteshop@gmail.com' ? 'user-admin-1' : 'user-admin-backup',
+      name: 'Rasel Babu (Executive Management)',
+      email: trimmedEmail,
+      phone: '+880 1711-000000',
+      role: 'admin',
+      status: 'approved',
+      points: 5000,
+      bio: 'Official website owner and primary artist administrator.',
+      registeredAt: '2025-01-01T00:00:00.000Z',
+      approvedAt: '2025-01-01T00:00:00.000Z',
+      salt: adminSalt,
+      passwordHash: hashPassword('Rb22&fkmB@@100', adminSalt),
+    };
+    users.unshift(user);
+    writeUsers(users);
+  }
 
   if (!user) {
     res.status(401).json({ success: false, message: 'Invalid credentials or no registered account found.' });

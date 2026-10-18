@@ -1,5 +1,19 @@
 [
   {
+    "id": "user-admin-1",
+    "name": "Rasel Babu (Executive Management)",
+    "email": "raselbabuwebsiteshop@gmail.com",
+    "phone": "+880 1711-000000",
+    "role": "admin",
+    "status": "approved",
+    "points": 5000,
+    "bio": "Official website owner and primary artist administrator.",
+    "registeredAt": "2025-01-01T00:00:00.000Z",
+    "approvedAt": "2025-01-01T00:00:00.000Z",
+    "salt": "146505d8435b34292f7dc5d180928f84",
+    "passwordHash": "ee123491be816daf1ed32efb8698a91abdea86b85f8ede9afcbc5b0c10940f330a5c3505a45ebc370011257780d3e189dec3bd71301269d1f32dd82a02fa164e"
+  },
+  {
     "id": "user-google-1792154609166",
     "name": "FK BABU",
     "email": "fkbabu07@gmail.com",
@@ -23,8 +37,8 @@
     "bio": "Official website owner and primary artist administrator.",
     "registeredAt": "2025-01-01T00:00:00.000Z",
     "approvedAt": "2025-01-01T00:00:00.000Z",
-    "salt": "9c5aa3e8cd88a7d213fc6c8a7436d37a",
-    "passwordHash": "015bc41fdaf8a0b4d466eba870747d80b96fb0109d4ddb186149c02675b67176b4fe4ea2805d6350ba40aab94b153555f90e5c3221545864bcd231b702640311"
+    "salt": "0a74d2234b06a86a7f4484e906a5f1f9",
+    "passwordHash": "83e99d3e6e0e128aba680282005e3541146c73a49d1fc9c26164a1871e33d194b34cb3a87a3622d9dcaadc91936a63c61a75d740b0b647f60e6e697b2d4d4327"
   },
   {
     "id": "user-admin-2",
