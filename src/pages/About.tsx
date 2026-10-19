@@ -110,7 +110,7 @@ export const About: React.FC<AboutProps> = ({ onNavigate }) => {
         </div>
 
         {/* Primary Adsterra Placement: About Page Banner */}
-        <AdSlot format="728x90" page="about" />
+        <AdSlot format="728x90" page="about" responsive />
 
         {/* 2. Artistic Dimensions (Voice Acting, Stage, Playback) */}
         <div className="space-y-8">

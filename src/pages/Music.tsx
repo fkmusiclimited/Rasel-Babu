@@ -25,7 +25,7 @@ export const Music: React.FC = () => {
         </div>
 
         {/* Adsterra Top Leaderboard */}
-        <AdSlot format="728x90" page="music" />
+        <AdSlot format="728x90" page="music" responsive />
 
         {/* Albums List */}
         <div className="space-y-16">
@@ -192,7 +192,7 @@ export const Music: React.FC = () => {
         </div>
 
         {/* Bottom Adsterra Leaderboard Slot */}
-        <AdSlot format="728x90" page="music" />
+        <AdSlot format="728x90" page="music" responsive />
       </div>
     </div>
   );

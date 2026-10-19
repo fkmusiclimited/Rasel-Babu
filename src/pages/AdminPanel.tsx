@@ -4343,25 +4343,66 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
               </p>
             </div>
 
-            {/* Global Switches */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold text-white block">Adsterra Global State</span>
-                  <span className="text-[11px] text-zinc-500">Enable or disable all ads</span>
+            {/* 1-Click Master Control Hero Banner */}
+            <div className={`p-6 sm:p-8 rounded-3xl border transition-all duration-300 shadow-2xl ${
+              adsterraConfig.enabled
+                ? 'bg-gradient-to-r from-emerald-950/40 via-zinc-950 to-zinc-900 border-emerald-500/50 shadow-emerald-950/30'
+                : 'bg-gradient-to-r from-rose-950/40 via-zinc-950 to-zinc-900 border-rose-500/50 shadow-rose-950/30'
+            }`}>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-block w-3 h-3 rounded-full ${
+                      adsterraConfig.enabled ? 'bg-emerald-400 animate-ping' : 'bg-rose-500'
+                    }`} />
+                    <span className={`text-xs font-mono uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full ${
+                      adsterraConfig.enabled
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                        : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                    }`}>
+                      {adsterraConfig.enabled ? 'ALL ADS ACTIVE · সকল বিজ্ঞাপন চালু' : 'ALL ADS DISABLED · সকল বিজ্ঞাপন বন্ধ'}
+                    </span>
+                  </div>
+                  <h3 className="font-display text-2xl sm:text-3xl font-bold text-white">
+                    Master Ads Switch / বিজ্ঞাপন মাস্টার কন্ট্রোল
+                  </h3>
+                  <p className="text-xs sm:text-sm text-zinc-300 max-w-xl leading-relaxed">
+                    ১ ক্লিকে পুরো ওয়েবসাইটের সকল ব্যানার (Leaderboard, 468x60, 300x250, 160x600, 320x50, 160x300) এবং সোশ্যাল বার অন বা অফ করুন।
+                  </p>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={adsterraConfig.enabled}
-                  onChange={(e) => updateAdsterraConfig({ enabled: e.target.checked })}
-                  className="w-5 h-5 accent-amber-400 cursor-pointer"
-                />
-              </div>
 
-              <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => updateAdsterraConfig({ enabled: !adsterraConfig.enabled })}
+                    className={`px-6 py-3.5 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2.5 shadow-xl cursor-pointer ${
+                      adsterraConfig.enabled
+                        ? 'bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-400 hover:to-rose-500 text-white shadow-rose-900/40'
+                        : 'bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-black shadow-emerald-900/40'
+                    }`}
+                  >
+                    {adsterraConfig.enabled ? (
+                      <>
+                        <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+                        <span>১-ক্লিকে সব বিজ্ঞাপন বন্ধ করুন (Turn OFF All Ads)</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="w-2.5 h-2.5 rounded-full bg-black animate-pulse" />
+                        <span>১-ক্লিকে সব বিজ্ঞাপন চালু করুন (Turn ON All Ads)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Secondary Controls (Social Bar & Live/Test Mode) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
                 <div>
                   <span className="text-xs font-semibold text-white block">Social Bar Widget</span>
-                  <span className="text-[11px] text-zinc-500">Floating discreet notice</span>
+                  <span className="text-[11px] text-zinc-400">bicea.org floating discreet social bar</span>
                 </div>
                 <input
                   type="checkbox"
@@ -4371,10 +4412,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                 />
               </div>
 
-              <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
                 <div>
                   <span className="text-xs font-semibold text-white block">Safe Preview / Test Mode</span>
-                  <span className="text-[11px] text-zinc-500">Compliant preview slot</span>
+                  <span className="text-[11px] text-zinc-400">
+                    {adsterraConfig.testMode ? 'Mock placeholder preview' : 'Real live Adsterra scripts running'}
+                  </span>
                 </div>
                 <input
                   type="checkbox"
@@ -4385,25 +4428,45 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* Publisher Credentials */}
-            <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-4">
-              <h3 className="text-xs font-mono uppercase text-amber-400">
-                Publisher Credentials & Zone Keys
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="space-y-1">
-                  <label className="text-zinc-400">Adsterra Publisher ID</label>
-                  <input
-                    type="text"
-                    value={adsterraConfig.publisherId}
-                    onChange={(e) => updateAdsterraConfig({ publisherId: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 font-mono text-amber-400"
-                  />
+            {/* Publisher Credentials & All 7 Zone Keys */}
+            <div className="p-6 rounded-3xl bg-zinc-950 border border-zinc-800 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    Adsterra Zone Keys & Script Placements
+                  </h3>
+                  <p className="text-xs text-zinc-400">
+                    Your verified Adsterra script keys from bicea.org:
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateAdsterraConfig({
+                      bannerKeys: {
+                        leaderboard728x90: '1fe9cd4f9a13d2eb6bf668247a7c5e55',
+                        banner468x60: '992e5c073cd17ad7d1ee02e15f6a74d7',
+                        mediumRectangle300x250: 'dd011d8b361d79661b6de3d5632ce1d5',
+                        mobileBanner320x50: 'a78db685879426319374cf7d5a8d7bed',
+                        skyscraper160x600: 'ca15548b4e78cc2ea6271d78c0e5c208',
+                        halfSkyscraper160x300: 'efd18937fec14299ab3536a4e698fd8b',
+                        socialBarKey: 'b1064cd1b5e0c41b0e67eb50417ae390',
+                      },
+                    })
+                  }
+                  className="px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-mono transition-colors cursor-pointer self-start sm:self-auto"
+                >
+                  Apply Official 7 Adsterra Keys
+                </button>
+              </div>
 
-                <div className="space-y-1">
-                  <label className="text-zinc-400">728×90 Leaderboard Zone Key</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                {/* 1. 728x90 Leaderboard */}
+                <div className="space-y-1 bg-zinc-900/50 p-3.5 rounded-xl border border-zinc-800/80">
+                  <div className="flex items-center justify-between">
+                    <label className="text-zinc-300 font-semibold">Leaderboard (728×90)</label>
+                    <span className="text-[10px] text-amber-400 font-mono">Desktop / Tablet</span>
+                  </div>
                   <input
                     type="text"
                     value={adsterraConfig.bannerKeys.leaderboard728x90}
@@ -4412,12 +4475,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                         bannerKeys: { ...adsterraConfig.bannerKeys, leaderboard728x90: e.target.value },
                       })
                     }
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 font-mono text-zinc-200"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 font-mono text-zinc-200 text-xs focus:border-amber-400 focus:outline-none"
                   />
+                  <span className="text-[10px] text-zinc-500">Key: 1fe9cd4f9a13d2eb6bf668247a7c5e55</span>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-zinc-400">300×250 Medium Rectangle Zone Key</label>
+                {/* 2. 468x60 Banner */}
+                <div className="space-y-1 bg-zinc-900/50 p-3.5 rounded-xl border border-zinc-800/80">
+                  <div className="flex items-center justify-between">
+                    <label className="text-zinc-300 font-semibold">Standard Banner (468×60)</label>
+                    <span className="text-[10px] text-amber-400 font-mono">Mid-Page</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={adsterraConfig.bannerKeys.banner468x60}
+                    onChange={(e) =>
+                      updateAdsterraConfig({
+                        bannerKeys: { ...adsterraConfig.bannerKeys, banner468x60: e.target.value },
+                      })
+                    }
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 font-mono text-zinc-200 text-xs focus:border-amber-400 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-zinc-500">Key: 992e5c073cd17ad7d1ee02e15f6a74d7</span>
+                </div>
+
+                {/* 3. 300x250 Medium Rectangle */}
+                <div className="space-y-1 bg-zinc-900/50 p-3.5 rounded-xl border border-zinc-800/80">
+                  <div className="flex items-center justify-between">
+                    <label className="text-zinc-300 font-semibold">Medium Rectangle (300×250)</label>
+                    <span className="text-[10px] text-amber-400 font-mono">Sidebar / In-Article</span>
+                  </div>
                   <input
                     type="text"
                     value={adsterraConfig.bannerKeys.mediumRectangle300x250}
@@ -4426,12 +4513,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                         bannerKeys: { ...adsterraConfig.bannerKeys, mediumRectangle300x250: e.target.value },
                       })
                     }
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 font-mono text-zinc-200"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 font-mono text-zinc-200 text-xs focus:border-amber-400 focus:outline-none"
                   />
+                  <span className="text-[10px] text-zinc-500">Key: dd011d8b361d79661b6de3d5632ce1d5</span>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-zinc-400">320×50 Mobile Banner Zone Key</label>
+                {/* 4. 160x600 Wide Skyscraper */}
+                <div className="space-y-1 bg-zinc-900/50 p-3.5 rounded-xl border border-zinc-800/80">
+                  <div className="flex items-center justify-between">
+                    <label className="text-zinc-300 font-semibold">Skyscraper (160×600)</label>
+                    <span className="text-[10px] text-amber-400 font-mono">Vertical Sidebar</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={adsterraConfig.bannerKeys.skyscraper160x600}
+                    onChange={(e) =>
+                      updateAdsterraConfig({
+                        bannerKeys: { ...adsterraConfig.bannerKeys, skyscraper160x600: e.target.value },
+                      })
+                    }
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 font-mono text-zinc-200 text-xs focus:border-amber-400 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-zinc-500">Key: ca15548b4e78cc2ea6271d78c0e5c208</span>
+                </div>
+
+                {/* 5. 320x50 Mobile Banner */}
+                <div className="space-y-1 bg-zinc-900/50 p-3.5 rounded-xl border border-zinc-800/80">
+                  <div className="flex items-center justify-between">
+                    <label className="text-zinc-300 font-semibold">Mobile Banner (320×50)</label>
+                    <span className="text-[10px] text-emerald-400 font-mono">Smartphones</span>
+                  </div>
                   <input
                     type="text"
                     value={adsterraConfig.bannerKeys.mobileBanner320x50}
@@ -4440,8 +4551,49 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                         bannerKeys: { ...adsterraConfig.bannerKeys, mobileBanner320x50: e.target.value },
                       })
                     }
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 font-mono text-zinc-200"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 font-mono text-zinc-200 text-xs focus:border-amber-400 focus:outline-none"
                   />
+                  <span className="text-[10px] text-zinc-500">Key: a78db685879426319374cf7d5a8d7bed</span>
+                </div>
+
+                {/* 6. 160x300 Half Skyscraper */}
+                <div className="space-y-1 bg-zinc-900/50 p-3.5 rounded-xl border border-zinc-800/80">
+                  <div className="flex items-center justify-between">
+                    <label className="text-zinc-300 font-semibold">Half Skyscraper (160×300)</label>
+                    <span className="text-[10px] text-amber-400 font-mono">Compact Sidebar</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={adsterraConfig.bannerKeys.halfSkyscraper160x300}
+                    onChange={(e) =>
+                      updateAdsterraConfig({
+                        bannerKeys: { ...adsterraConfig.bannerKeys, halfSkyscraper160x300: e.target.value },
+                      })
+                    }
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 font-mono text-zinc-200 text-xs focus:border-amber-400 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-zinc-500">Key: efd18937fec14299ab3536a4e698fd8b</span>
+                </div>
+
+                {/* 7. Social Bar */}
+                <div className="space-y-1 bg-zinc-900/50 p-3.5 rounded-xl border border-zinc-800/80 sm:col-span-2 lg:col-span-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-zinc-300 font-semibold">Social Bar Widget Script Key</label>
+                    <span className="text-[10px] text-pink-400 font-mono">Global Sticky Bar</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={adsterraConfig.bannerKeys.socialBarKey}
+                    onChange={(e) =>
+                      updateAdsterraConfig({
+                        bannerKeys: { ...adsterraConfig.bannerKeys, socialBarKey: e.target.value },
+                      })
+                    }
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 font-mono text-zinc-200 text-xs focus:border-amber-400 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-zinc-500">
+                    Script URL: https://bicea.org/14/b1064cd1b5e0c41b0e67eb50417ae390
+                  </span>
                 </div>
               </div>
             </div>

@@ -92,7 +92,7 @@ export const Gallery: React.FC<GalleryProps> = ({ onNavigate }) => {
         </div>
 
         {/* Top Adsterra Leaderboard Slot */}
-        <AdSlot format="728x90" page="gallery" />
+        <AdSlot format="728x90" page="gallery" responsive />
 
         {/* Photo Grid */}
         {visiblePhotos.length > 0 ? (
@@ -206,7 +206,7 @@ export const Gallery: React.FC<GalleryProps> = ({ onNavigate }) => {
 
         {/* Bottom Adsterra Medium Rectangle / Banner */}
         <div className="pt-6">
-          <AdSlot format="728x90" page="gallery" />
+          <AdSlot format="728x90" page="gallery" responsive />
         </div>
       </div>
     </div>

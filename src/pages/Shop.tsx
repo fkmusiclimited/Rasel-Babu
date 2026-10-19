@@ -1497,7 +1497,7 @@ export const Shop: React.FC = () => {
         )}
 
         {/* Adsterra Banner Slot */}
-        <AdSlot format="728x90" page="home" />
+        <AdSlot format="728x90" page="shop" responsive />
 
       </div>
     </div>

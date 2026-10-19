@@ -155,7 +155,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
 
       {/* 2. Primary Adsterra Placement: Homepage Leaderboard */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        <AdSlot format="728x90" page="home" />
+        <AdSlot format="728x90" page="home" responsive />
       </div>
 
       {/* 3. Recent Success & Career Victories Section */}
@@ -485,7 +485,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
 
       {/* Adsterra 468x60 Banner Placement */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-center">
-        <AdSlot format="468x60" page="home" adKeyOverride="5b415df9f7b29bb59457dfbeb59a537b" />
+        <AdSlot format="468x60" page="home" />
       </div>
 
       {/* 5. Fan Club & Newsletter Callout */}

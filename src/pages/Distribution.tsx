@@ -467,7 +467,7 @@ export const Distribution: React.FC = () => {
 
         {/* Adsterra Bottom Placement */}
         <div className="pt-4">
-          <AdSlot format="728x90" page="home" />
+          <AdSlot format="728x90" page="home" responsive />
         </div>
 
       </div>

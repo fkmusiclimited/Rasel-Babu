@@ -81,7 +81,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({ photoId, onNavigate })
         </div>
 
         {/* Top Adsterra Leaderboard Placement */}
-        <AdSlot format="728x90" page="photoDetail" />
+        <AdSlot format="728x90" page="photoDetail" responsive />
 
         {/* Main Photo Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

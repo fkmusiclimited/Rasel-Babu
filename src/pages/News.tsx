@@ -25,7 +25,7 @@ export const News: React.FC = () => {
         </div>
 
         {/* Adsterra Top Slot */}
-        <AdSlot format="728x90" page="news" />
+        <AdSlot format="728x90" page="news" responsive />
 
         {/* News Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -115,6 +115,11 @@ export const News: React.FC = () => {
 
               <div className="text-sm text-zinc-300 leading-relaxed space-y-4 whitespace-pre-wrap">
                 {activeArticle.content}
+              </div>
+
+              {/* In-Article Adsterra Placement (300x250) */}
+              <div className="flex justify-center py-2">
+                <AdSlot format="300x250" page="news" />
               </div>
 
               <div className="pt-4 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-500">

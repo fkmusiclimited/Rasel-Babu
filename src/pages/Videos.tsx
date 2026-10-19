@@ -151,7 +151,7 @@ export const Videos: React.FC = () => {
         </div>
 
         {/* Adsterra Top Leaderboard */}
-        <AdSlot format="728x90" page="home" />
+        <AdSlot format="728x90" page="videos" responsive />
 
         {/* Video Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

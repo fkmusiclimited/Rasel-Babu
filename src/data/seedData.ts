@@ -494,16 +494,17 @@ export const INITIAL_TOUR_EVENTS: TourEvent[] = [
 
 export const INITIAL_ADSTERRA_CONFIG: AdsterraConfig = {
   enabled: true,
-  publisherId: 'ADSTERRA_PUB_8492019',
+  publisherId: 'bicea_pub_b1064cd1b5',
   socialBarEnabled: true,
-  testMode: true, // safe default with compliant partner preview
+  testMode: false, // Live real Adsterra ads active
   bannerKeys: {
-    leaderboard728x90: 'at_key_728x90_music_web',
-    banner468x60: 'at_key_468x60_music_web',
-    mediumRectangle300x250: 'at_key_300x250_music_web',
-    mobileBanner320x50: 'at_key_320x50_mobile_web',
-    skyscraper160x600: 'at_key_160x600_side_web',
-    socialBarKey: 'at_key_social_bar_rasel',
+    leaderboard728x90: '1fe9cd4f9a13d2eb6bf668247a7c5e55',
+    banner468x60: '992e5c073cd17ad7d1ee02e15f6a74d7',
+    mediumRectangle300x250: 'dd011d8b361d79661b6de3d5632ce1d5',
+    mobileBanner320x50: 'a78db685879426319374cf7d5a8d7bed',
+    skyscraper160x600: 'ca15548b4e78cc2ea6271d78c0e5c208',
+    halfSkyscraper160x300: 'efd18937fec14299ab3536a4e698fd8b',
+    socialBarKey: 'b1064cd1b5e0c41b0e67eb50417ae390',
   },
   pagePlacements: {
     home: true,
@@ -512,8 +513,10 @@ export const INITIAL_ADSTERRA_CONFIG: AdsterraConfig = {
     photoDetail: true,
     music: true,
     news: true,
+    shop: true,
+    videos: true,
     contact: false, // clean booking experience
-    dashboard: false, // clean user experience
+    dashboard: false, // clean fan dashboard experience
   },
   customScriptHeader: '',
 };

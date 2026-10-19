@@ -149,7 +149,7 @@ const NEWS_KEY = 'raselbabu_news_v1';
 const TOURS_KEY = 'raselbabu_tours_v1';
 const INQUIRIES_KEY = 'raselbabu_inquiries_v1';
 const MESSAGES_KEY = 'raselbabu_messages_v1';
-const ADS_KEY = 'raselbabu_adsterra_v1';
+const ADS_KEY = 'raselbabu_adsterra_v2';
 const ANALYTICS_KEY = 'raselbabu_analytics_v1';
 const PRODUCTS_KEY = 'raselbabu_products_v1';
 const ORDERS_KEY = 'raselbabu_orders_v1';
@@ -395,7 +395,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [adsterraConfig, setAdsterraConfig] = useState<AdsterraConfig>(() => {
     try {
       const saved = localStorage.getItem(ADS_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...INITIAL_ADSTERRA_CONFIG,
+          ...parsed,
+          bannerKeys: {
+            ...INITIAL_ADSTERRA_CONFIG.bannerKeys,
+            ...(parsed.bannerKeys || {}),
+          },
+          pagePlacements: {
+            ...INITIAL_ADSTERRA_CONFIG.pagePlacements,
+            ...(parsed.pagePlacements || {}),
+          },
+        };
+      }
     } catch (e) {
       console.error(e);
     }

@@ -138,13 +138,14 @@ export interface AdsterraConfig {
   enabled: boolean;
   publisherId: string;
   socialBarEnabled: boolean;
-  testMode: boolean; // renders high-fidelity compliant mock banner when real ads are in testing
+  testMode: boolean; // false for live ads, true for preview
   bannerKeys: {
     leaderboard728x90: string;
     banner468x60: string;
     mediumRectangle300x250: string;
     mobileBanner320x50: string;
     skyscraper160x600: string;
+    halfSkyscraper160x300: string;
     socialBarKey: string;
   };
   pagePlacements: {
@@ -156,6 +157,8 @@ export interface AdsterraConfig {
     news: boolean;
     contact: boolean;
     dashboard: boolean;
+    shop: boolean;
+    videos: boolean;
   };
   customScriptHeader?: string;
 }
