@@ -20,7 +20,19 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-app.use(express.json({ limit: '10mb' }));
+// Enable CORS across all origins, proxies, and devices
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ limit: '15mb', extended: true }));
 
 // ---------------------------------------------------------------------------
 // Password & Crypto Helpers
@@ -829,8 +841,19 @@ app.post('/api/admin/users/:id/points', requireAdmin, (req, res) => {
 // ---------------------------------------------------------------------------
 app.get('/api/settings', (_req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     if (fs.existsSync(SETTINGS_FILE)) {
       const data = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
+      res.json({ success: true, settings: data });
+      return;
+    }
+
+    const publicSettings = path.resolve('public', 'settings.json');
+    if (fs.existsSync(publicSettings)) {
+      const data = JSON.parse(fs.readFileSync(publicSettings, 'utf-8'));
       res.json({ success: true, settings: data });
       return;
     }
@@ -849,13 +872,45 @@ app.post('/api/settings', (req, res) => {
       } catch {
         current = {};
       }
+    } else {
+      const publicSettings = path.resolve('public', 'settings.json');
+      if (fs.existsSync(publicSettings)) {
+        try {
+          current = JSON.parse(fs.readFileSync(publicSettings, 'utf-8'));
+        } catch {}
+      }
     }
+
     const settings = { ...current, ...req.body };
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
-    res.json({ success: true, message: 'Settings saved to persistent storage.', settings });
+    const serialized = JSON.stringify(settings, null, 2);
+
+    // 1. Write to server database storage (.data/settings.json)
+    fs.writeFileSync(SETTINGS_FILE, serialized, 'utf-8');
+
+    // 2. Mirror to public/settings.json for static bundle persistence
+    try {
+      const publicPath = path.resolve('public', 'settings.json');
+      fs.writeFileSync(publicPath, serialized, 'utf-8');
+    } catch (e) {
+      console.warn('Could not mirror to public/settings.json:', e);
+    }
+
+    // 3. Mirror to dist/settings.json if dist folder exists
+    try {
+      const distPath = path.resolve('dist', 'settings.json');
+      if (fs.existsSync(path.resolve('dist'))) {
+        fs.writeFileSync(distPath, serialized, 'utf-8');
+      }
+    } catch {}
+
+    res.json({
+      success: true,
+      message: 'Settings successfully persisted centrally across all browsers and devices.',
+      settings,
+    });
   } catch (err) {
     console.error('Failed to save settings file:', err);
-    res.status(500).json({ success: false, message: 'Failed to write settings' });
+    res.status(500).json({ success: false, message: 'Failed to write settings to central storage' });
   }
 });
 

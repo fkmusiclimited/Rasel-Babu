@@ -2,6 +2,7 @@ import React from 'react';
 import { useData } from '../context/DataContext';
 import { AdSlot } from '../components/ads/AdSlot';
 import { HeroHorizontalFilmReel } from '../components/gallery/HeroHorizontalFilmReel';
+import { PORTRAIT_IMAGE } from '../data/seedData';
 import {
   Play,
   Calendar,
@@ -186,7 +187,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             <div className="lg:col-span-4 flex flex-col items-center">
               <div className="w-full max-w-[280px] aspect-[4/5] rounded-2xl overflow-hidden border-2 border-amber-500/30 shadow-2xl relative group bg-black">
                 <img
-                  src={homepageSettings.aboutImageUrl || featuredAlbum.coverUrl}
+                  src={homepageSettings.artistProfileImage || homepageSettings.aboutImageUrl || PORTRAIT_IMAGE}
                   alt="Rasel Babu Recent Success"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"

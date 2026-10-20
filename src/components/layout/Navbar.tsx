@@ -137,14 +137,15 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
         </div>
 
         {/* Mobile Header Actions & Hamburger Toggle */}
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex items-center gap-2 lg:hidden shrink-0">
           {!currentUser ? (
             <button
               onClick={() => handleNavClick('/login')}
-              className="px-3 py-1.5 text-xs font-semibold text-zinc-100 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-amber-400 rounded-lg whitespace-nowrap cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm"
+              className="px-2.5 py-1.5 sm:px-3 text-xs font-bold text-black bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 hover:from-amber-300 hover:to-amber-400 rounded-lg whitespace-nowrap cursor-pointer transition-all flex items-center gap-1.5 shadow-md shadow-amber-500/20"
+              title="Login to Account"
             >
-              <UserIcon className="w-3.5 h-3.5 text-amber-400" />
-              <span>Login / লগইন</span>
+              <UserIcon className="w-3.5 h-3.5 text-black" />
+              <span>লগইন / Login</span>
             </button>
           ) : (
             <button
@@ -183,9 +184,9 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-zinc-800 bg-[#0c0c10] px-4 pt-3 pb-6 space-y-2 animate-fade-in">
+        <div className="lg:hidden border-t border-zinc-800 bg-[#0c0c10] px-4 pt-3 pb-6 space-y-3 animate-fade-in">
           {/* Artist Identity Bar */}
-          <div className="flex items-center gap-3 p-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl mb-2">
+          <div className="flex items-center gap-3 p-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl">
             <div className="w-10 h-10 rounded-full overflow-hidden border border-amber-400/40 shrink-0 bg-black">
               <img
                 src={homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage || PORTRAIT_IMAGE}
@@ -198,6 +199,38 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
               <div className="text-[11px] text-amber-400 font-mono">Official Artist Portal</div>
             </div>
           </div>
+
+          {/* Dedicated High-Visibility Mobile Login Option */}
+          {!currentUser ? (
+            <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-zinc-900 to-zinc-900 border border-amber-500/40 flex items-center justify-between gap-3 shadow-md">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <UserIcon className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Fan & Admin Login (লগইন)</span>
+                </p>
+                <p className="text-[10px] text-zinc-400">একাউন্ট লগইন করে পয়েন্ট ও প্রোফাইল অ্যাক্সেস করুন</p>
+              </div>
+              <button
+                onClick={() => handleNavClick('/login')}
+                className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-black font-bold text-xs shrink-0 cursor-pointer shadow-md transition-all"
+              >
+                লগইন / Login
+              </button>
+            </div>
+          ) : (
+            <div className="p-2.5 rounded-xl bg-zinc-900/90 border border-zinc-800 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-zinc-300">Logged in: <strong className="text-white">{currentUser.name}</strong></span>
+              </div>
+              <button
+                onClick={() => handleNavClick('/login')}
+                className="text-amber-400 hover:underline font-medium cursor-pointer"
+              >
+                লগইন / Switch
+              </button>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2 pt-1 pb-3 border-b border-zinc-800">
             {navLinks.map((link) => (

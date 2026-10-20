@@ -52,6 +52,8 @@ import {
   Clock,
   KeyRound,
   Copy,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import { UserRole, PhotoItem, NewsArticle, VideoItem, TourEvent, Product, OrderItem, HomepageSettings, DistributionInquiry, User } from '../types';
 import { extractYouTubeId } from './Videos';
@@ -104,6 +106,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     analytics,
     homepageSettings,
     updateHomepageSettings,
+    reloadSettings,
+    settingsLoading,
     pointTransactions,
     sendBonusPoints,
     distributionInquiries,
@@ -312,15 +316,67 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
   const [isProfilePhotoUploading, setIsProfilePhotoUploading] = useState(false);
   const [profilePhotoSaveNotice, setProfilePhotoSaveNotice] = useState<string | null>(null);
 
+  const [isSavingCMS, setIsSavingCMS] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
+  const [isReloadingSettings, setIsReloadingSettings] = useState(false);
+
   // Sync state when homepageSettings updates from persistent storage
   React.useEffect(() => {
+    if (!homepageSettings) return;
     if (homepageSettings.artistProfileImage) {
       setHomeArtistProfileImage(homepageSettings.artistProfileImage);
     }
     if (homepageSettings.artistProfileSquare) {
       setHomeArtistProfileSquare(homepageSettings.artistProfileSquare);
     }
-  }, [homepageSettings.artistProfileImage, homepageSettings.artistProfileSquare]);
+    if (homepageSettings.heroTagline !== undefined) setHomeHeroTagline(homepageSettings.heroTagline);
+    if (homepageSettings.heroTitle !== undefined) setHomeHeroTitle(homepageSettings.heroTitle);
+    if (homepageSettings.heroSubtitle !== undefined) setHomeHeroSubtitle(homepageSettings.heroSubtitle);
+    if (homepageSettings.heroDescription !== undefined) setHomeHeroDesc(homepageSettings.heroDescription);
+    if (homepageSettings.heroImageUrl !== undefined) setHomeHeroImageUrl(homepageSettings.heroImageUrl);
+    if (homepageSettings.heroEventBadge !== undefined) setHomeEventBadge(homepageSettings.heroEventBadge);
+    if (homepageSettings.heroEventTitle !== undefined) setHomeEventTitle(homepageSettings.heroEventTitle);
+    if (homepageSettings.heroEventSubtitle !== undefined) setHomeEventSubtitle(homepageSettings.heroEventSubtitle);
+    if (homepageSettings.stat1Value !== undefined) setHomeStat1Val(homepageSettings.stat1Value);
+    if (homepageSettings.stat1Label !== undefined) setHomeStat1Lbl(homepageSettings.stat1Label);
+    if (homepageSettings.stat2Value !== undefined) setHomeStat2Val(homepageSettings.stat2Value);
+    if (homepageSettings.stat2Label !== undefined) setHomeStat2Lbl(homepageSettings.stat2Label);
+    if (homepageSettings.stat3Value !== undefined) setHomeStat3Val(homepageSettings.stat3Value);
+    if (homepageSettings.stat3Label !== undefined) setHomeStat3Lbl(homepageSettings.stat3Label);
+    if (homepageSettings.stat4Value !== undefined) setHomeStat4Val(homepageSettings.stat4Value);
+    if (homepageSettings.stat4Label !== undefined) setHomeStat4Lbl(homepageSettings.stat4Label);
+    if (homepageSettings.aboutHeadline !== undefined) setHomeAboutHeadline(homepageSettings.aboutHeadline);
+    if (homepageSettings.aboutBio1 !== undefined) setHomeAboutBio1(homepageSettings.aboutBio1);
+    if (homepageSettings.aboutBio2 !== undefined) setHomeAboutBio2(homepageSettings.aboutBio2);
+    if (homepageSettings.aboutImageUrl !== undefined) setHomeAboutImageUrl(homepageSettings.aboutImageUrl);
+    if (homepageSettings.aboutCity !== undefined) setHomeAboutCity(homepageSettings.aboutCity);
+    if (homepageSettings.aboutVillage !== undefined) setHomeAboutVillage(homepageSettings.aboutVillage);
+    if (homepageSettings.aboutEducation !== undefined) setHomeAboutEducation(homepageSettings.aboutEducation);
+    if (homepageSettings.distHeadline !== undefined) setHomeDistHeadline(homepageSettings.distHeadline);
+    if (homepageSettings.distTagline !== undefined) setHomeDistTagline(homepageSettings.distTagline);
+    if (homepageSettings.distDescription !== undefined) setHomeDistDesc(homepageSettings.distDescription);
+    if (homepageSettings.distBannerUrl !== undefined) setHomeDistBannerUrl(homepageSettings.distBannerUrl);
+    if (homepageSettings.musicHeadline !== undefined) setHomeMusicHeadline(homepageSettings.musicHeadline);
+    if (homepageSettings.musicSubtitle !== undefined) setHomeMusicSubtitle(homepageSettings.musicSubtitle);
+    if (homepageSettings.featuredAlbumTitle !== undefined) setHomeFeaturedAlbumTitle(homepageSettings.featuredAlbumTitle);
+    if (homepageSettings.featuredAlbumCover !== undefined) setHomeFeaturedAlbumCover(homepageSettings.featuredAlbumCover);
+    if (homepageSettings.fanClubHeadline !== undefined) setHomeFanClubHeadline(homepageSettings.fanClubHeadline);
+    if (homepageSettings.fanClubDescription !== undefined) setHomeFanClubDesc(homepageSettings.fanClubDescription);
+    if (homepageSettings.annualGiftTitle !== undefined) setHomeAnnualGiftTitle(homepageSettings.annualGiftTitle);
+    if (homepageSettings.annualGiftDescription !== undefined) setHomeAnnualGiftDesc(homepageSettings.annualGiftDescription);
+    if (homepageSettings.annualGiftImage !== undefined) setHomeAnnualGiftImage(homepageSettings.annualGiftImage);
+    if (homepageSettings.contactEmail !== undefined) setHomeContactEmail(homepageSettings.contactEmail);
+    if (homepageSettings.contactPhone !== undefined) setHomeContactPhone(homepageSettings.contactPhone);
+    if (homepageSettings.contactWhatsapp !== undefined) setHomeContactWhatsapp(homepageSettings.contactWhatsapp);
+    if (homepageSettings.contactAddress !== undefined) setHomeContactAddress(homepageSettings.contactAddress);
+    if (homepageSettings.socialFacebook !== undefined) setHomeSocialFacebook(homepageSettings.socialFacebook);
+    if (homepageSettings.socialYoutube !== undefined) setHomeSocialYoutube(homepageSettings.socialYoutube);
+    if (homepageSettings.socialSpotify !== undefined) setHomeSocialSpotify(homepageSettings.socialSpotify);
+    if (homepageSettings.socialInstagram !== undefined) setHomeSocialInstagram(homepageSettings.socialInstagram);
+    if (homepageSettings.footerCopyright !== undefined) setHomeFooterCopyright(homepageSettings.footerCopyright);
+    if (homepageSettings.footerTagline !== undefined) setHomeFooterTagline(homepageSettings.footerTagline);
+  }, [homepageSettings]);
 
   // Website Homepage Live CMS editor state
   const [homeHeroTagline, setHomeHeroTagline] = useState(homepageSettings.heroTagline);
@@ -499,71 +555,94 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleSaveArtistProfilePhoto = () => {
-    updateHomepageSettings({
-      artistProfileImage: homeArtistProfileImage,
-      artistProfileSquare: homeArtistProfileSquare,
-    });
-    updateWebsiteFavicon(homeArtistProfileSquare || homeArtistProfileImage);
-    setProfilePhotoSaveNotice('রাসেল বাবুর অফিসিয়াল প্রোফাইল ছবি ও ব্রাউজার ফেভিকন সফলভাবে সংরক্ষিত হয়েছে! (Saved persistently)');
-    setTimeout(() => setProfilePhotoSaveNotice(null), 5000);
+  const handleSaveArtistProfilePhoto = async () => {
+    setIsSavingProfile(true);
+    setSaveErrorMessage(null);
+    try {
+      const res = await updateHomepageSettings({
+        artistProfileImage: homeArtistProfileImage,
+        artistProfileSquare: homeArtistProfileSquare,
+      });
+      if (res.success) {
+        setProfilePhotoSaveNotice('✅ রাসেল বাবুর অফিসিয়াল প্রোফাইল ছবি ও ব্রাউজার ফেভিকন সফলভাবে ডাটাবেজে সংরক্ষিত হয়েছে! (Live centrally across all browsers and devices)');
+        setTimeout(() => setProfilePhotoSaveNotice(null), 6000);
+      } else {
+        setSaveErrorMessage(res.message || 'প্রোফাইল ছবি সংরক্ষণ ব্যর্থ হয়েছে। সার্ভার সংযোগ পরীক্ষা করুন।');
+      }
+    } catch (err: any) {
+      setSaveErrorMessage('সংরক্ষণ ত্রুটি: ' + (err?.message || 'সার্ভার সেভ ব্যর্থ হয়েছে'));
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
-  const handleSaveHomepageCMS = (e: React.FormEvent) => {
+  const handleSaveHomepageCMS = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateHomepageSettings({
-      artistProfileImage: homeArtistProfileImage,
-      artistProfileSquare: homeArtistProfileSquare,
-      heroTagline: homeHeroTagline,
-      heroTitle: homeHeroTitle,
-      heroSubtitle: homeHeroSubtitle,
-      heroDescription: homeHeroDesc,
-      heroImageUrl: homeHeroImageUrl,
-      heroEventBadge: homeEventBadge,
-      heroEventTitle: homeEventTitle,
-      heroEventSubtitle: homeEventSubtitle,
-      stat1Value: homeStat1Val,
-      stat1Label: homeStat1Lbl,
-      stat2Value: homeStat2Val,
-      stat2Label: homeStat2Lbl,
-      stat3Value: homeStat3Val,
-      stat3Label: homeStat3Lbl,
-      stat4Value: homeStat4Val,
-      stat4Label: homeStat4Lbl,
-      aboutHeadline: homeAboutHeadline,
-      aboutBio1: homeAboutBio1,
-      aboutBio2: homeAboutBio2,
-      aboutImageUrl: homeAboutImageUrl,
-      aboutCity: homeAboutCity,
-      aboutVillage: homeAboutVillage,
-      aboutEducation: homeAboutEducation,
-      distHeadline: homeDistHeadline,
-      distTagline: homeDistTagline,
-      distDescription: homeDistDesc,
-      distBannerUrl: homeDistBannerUrl,
-      musicHeadline: homeMusicHeadline,
-      musicSubtitle: homeMusicSubtitle,
-      featuredAlbumTitle: homeFeaturedAlbumTitle,
-      featuredAlbumCover: homeFeaturedAlbumCover,
-      fanClubHeadline: homeFanClubHeadline,
-      fanClubDescription: homeFanClubDesc,
-      annualGiftTitle: homeAnnualGiftTitle,
-      annualGiftDescription: homeAnnualGiftDesc,
-      annualGiftImage: homeAnnualGiftImage,
-      contactEmail: homeContactEmail,
-      contactPhone: homeContactPhone,
-      contactWhatsapp: homeContactWhatsapp,
-      contactAddress: homeContactAddress,
-      socialFacebook: homeSocialFacebook,
-      socialYoutube: homeSocialYoutube,
-      socialSpotify: homeSocialSpotify,
-      socialInstagram: homeSocialInstagram,
-      footerCopyright: homeFooterCopyright,
-      footerTagline: homeFooterTagline,
-    });
-    updateWebsiteFavicon(homeArtistProfileSquare || homeArtistProfileImage);
-    setHomeSaveSuccess('All website texts, photos, and configurations saved successfully! Live across entire portal.');
-    setTimeout(() => setHomeSaveSuccess(null), 5000);
+    setIsSavingCMS(true);
+    setSaveErrorMessage(null);
+    try {
+      const res = await updateHomepageSettings({
+        artistProfileImage: homeArtistProfileImage,
+        artistProfileSquare: homeArtistProfileSquare,
+        heroTagline: homeHeroTagline,
+        heroTitle: homeHeroTitle,
+        heroSubtitle: homeHeroSubtitle,
+        heroDescription: homeHeroDesc,
+        heroImageUrl: homeHeroImageUrl,
+        heroEventBadge: homeEventBadge,
+        heroEventTitle: homeEventTitle,
+        heroEventSubtitle: homeEventSubtitle,
+        stat1Value: homeStat1Val,
+        stat1Label: homeStat1Lbl,
+        stat2Value: homeStat2Val,
+        stat2Label: homeStat2Lbl,
+        stat3Value: homeStat3Val,
+        stat3Label: homeStat3Lbl,
+        stat4Value: homeStat4Val,
+        stat4Label: homeStat4Lbl,
+        aboutHeadline: homeAboutHeadline,
+        aboutBio1: homeAboutBio1,
+        aboutBio2: homeAboutBio2,
+        aboutImageUrl: homeAboutImageUrl,
+        aboutCity: homeAboutCity,
+        aboutVillage: homeAboutVillage,
+        aboutEducation: homeAboutEducation,
+        distHeadline: homeDistHeadline,
+        distTagline: homeDistTagline,
+        distDescription: homeDistDesc,
+        distBannerUrl: homeDistBannerUrl,
+        musicHeadline: homeMusicHeadline,
+        musicSubtitle: homeMusicSubtitle,
+        featuredAlbumTitle: homeFeaturedAlbumTitle,
+        featuredAlbumCover: homeFeaturedAlbumCover,
+        fanClubHeadline: homeFanClubHeadline,
+        fanClubDescription: homeFanClubDesc,
+        annualGiftTitle: homeAnnualGiftTitle,
+        annualGiftDescription: homeAnnualGiftDesc,
+        annualGiftImage: homeAnnualGiftImage,
+        contactEmail: homeContactEmail,
+        contactPhone: homeContactPhone,
+        contactWhatsapp: homeContactWhatsapp,
+        contactAddress: homeContactAddress,
+        socialFacebook: homeSocialFacebook,
+        socialYoutube: homeSocialYoutube,
+        socialSpotify: homeSocialSpotify,
+        socialInstagram: homeSocialInstagram,
+        footerCopyright: homeFooterCopyright,
+        footerTagline: homeFooterTagline,
+      });
+
+      if (res.success) {
+        setHomeSaveSuccess('✅ ওয়েবসাইটের সকল টেক্সট, ফটো ও সেটিংস কেন্দ্রীয় ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে! সমস্ত ব্রাউজার, কম্পিউটার ও মোবাইলে পরিবর্তন কার্যকর। (Live centrally across all browsers and devices)');
+        setTimeout(() => setHomeSaveSuccess(null), 6000);
+      } else {
+        setSaveErrorMessage(res.message || 'সেটিংস সংরক্ষণ ব্যর্থ হয়েছে। সার্ভার সংযোগ পরীক্ষা করুন।');
+      }
+    } catch (err: any) {
+      setSaveErrorMessage('সার্ভার সেভ ত্রুটি: ' + (err?.message || 'সংরক্ষণ ব্যর্থ হয়েছে'));
+    } finally {
+      setIsSavingCMS(false);
+    }
   };
 
   const handleSendDistributionReply = (id: string) => {
@@ -3034,7 +3113,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsReloadingSettings(true);
+                    setSaveErrorMessage(null);
+                    try {
+                      const res = await reloadSettings();
+                      if (res) {
+                        setHomeSaveSuccess('✅ সার্ভার ডাটাবেজ থেকে সর্বশেষ সেটিংস রিলোড সম্পন্ন হয়েছে! (Reloaded from central database)');
+                        setTimeout(() => setHomeSaveSuccess(null), 4000);
+                      }
+                    } finally {
+                      setIsReloadingSettings(false);
+                    }
+                  }}
+                  disabled={isReloadingSettings}
+                  className="px-3.5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-amber-300 border border-amber-500/30 text-xs font-medium flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-sm"
+                  title="Reload latest live data from server database"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isReloadingSettings ? 'animate-spin' : ''}`} />
+                  <span>{isReloadingSettings ? 'রিলোড হচ্ছে...' : 'Reload Server Data (ডাটা রিলোড)'}</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => onNavigate('/')}
@@ -3050,6 +3152,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
               <div className="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/50 text-emerald-200 text-xs sm:text-sm flex items-center gap-2 shadow-xl animate-fade-in">
                 <Check className="w-5 h-5 text-emerald-400 shrink-0" />
                 <span>{homeSaveSuccess}</span>
+              </div>
+            )}
+
+            {saveErrorMessage && (
+              <div className="p-4 rounded-2xl bg-red-950/70 border border-red-500/60 text-red-200 text-xs sm:text-sm flex items-center gap-2.5 shadow-xl animate-fade-in">
+                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+                <span className="font-medium">{saveErrorMessage}</span>
               </div>
             )}
 
@@ -3078,10 +3187,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                     <button
                       type="button"
                       onClick={handleSaveArtistProfilePhoto}
-                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-black font-bold text-xs shadow-lg shadow-amber-400/25 flex items-center gap-2 transition-all cursor-pointer active:scale-95"
+                      disabled={isSavingProfile}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-black font-bold text-xs shadow-lg shadow-amber-400/25 flex items-center gap-2 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
                     >
-                      <Check className="w-4 h-4" />
-                      <span>Save Profile &amp; Favicon (সেভ করুন)</span>
+                      {isSavingProfile ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-black" />
+                          <span>সংরক্ষণ হচ্ছে... (Saving)</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>Save Profile &amp; Favicon (সেভ করুন)</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -3262,10 +3381,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                         <button
                           type="button"
                           onClick={handleSaveArtistProfilePhoto}
-                          className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-black font-bold text-xs shadow-lg shadow-amber-400/20 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+                          disabled={isSavingProfile}
+                          className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-black font-bold text-xs shadow-lg shadow-amber-400/20 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98 disabled:opacity-50"
                         >
-                          <Check className="w-4 h-4" />
-                          <span>Save Rasel Babu Profile Photo &amp; Favicon Now</span>
+                          {isSavingProfile ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin text-black" />
+                              <span>ডাটাবেজে সংরক্ষণ হচ্ছে... (Saving to Database)</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-4 h-4" />
+                              <span>Save Rasel Babu Profile Photo &amp; Favicon Now</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -3893,10 +4022,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                 <div className="flex items-center gap-3">
                   <button
                     type="submit"
-                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 text-black font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-amber-400/25 flex items-center gap-2 cursor-pointer transition-all"
+                    disabled={isSavingCMS}
+                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 text-black font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-amber-400/25 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50 active:scale-95"
                   >
-                    <Check className="w-4 h-4" />
-                    <span>Save Homepage Changes (হোমপেজ পরিবর্তন সংরক্ষণ করুন)</span>
+                    {isSavingCMS ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-black" />
+                        <span>সার্ভার ডাটাবেজে সংরক্ষণ হচ্ছে... (Saving to Database)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Save Homepage Changes (হোমপেজ পরিবর্তন সংরক্ষণ করুন)</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

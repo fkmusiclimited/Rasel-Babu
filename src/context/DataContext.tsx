@@ -34,6 +34,7 @@ import {
 } from '../data/seedData';
 
 import { audioSynth } from '../utils/audioSynth';
+import { updateWebsiteFavicon } from '../utils/imageCompress';
 
 interface ActiveTrackState {
   track: Track | null;
@@ -118,9 +119,11 @@ interface DataContextType {
   analytics: AnalyticsStats;
   recordPageView: (path: string) => void;
 
-  // Homepage Dynamic Content (Editable by Admin)
+  // Homepage Dynamic Content (Editable by Admin & Centrally Persisted)
   homepageSettings: HomepageSettings;
-  updateHomepageSettings: (updates: Partial<HomepageSettings>) => void;
+  updateHomepageSettings: (updates: Partial<HomepageSettings>) => Promise<{ success: boolean; message?: string }>;
+  reloadSettings: () => Promise<HomepageSettings | null>;
+  settingsLoading: boolean;
 
   // Fan Bonus Points Management
   pointTransactions: PointTransaction[];
@@ -427,33 +430,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return INITIAL_ANALYTICS;
   });
 
-  // Homepage Dynamic Editable Settings
+const normalizeImagePath = (url?: string): string => {
+  if (!url) return '';
+  if (url.startsWith('/src/assets/images/')) {
+    return url.replace('/src/assets/images/', '/assets/images/');
+  }
+  return url;
+};
+
+const sanitizeSettings = (raw: any): HomepageSettings => {
+  if (!raw || typeof raw !== 'object') return { ...INITIAL_HOMEPAGE_SETTINGS };
+  const merged: HomepageSettings = { ...INITIAL_HOMEPAGE_SETTINGS, ...raw };
+
+  merged.aboutImageUrl = normalizeImagePath(merged.aboutImageUrl);
+  merged.heroImageUrl = normalizeImagePath(merged.heroImageUrl);
+  merged.annualGiftImage = normalizeImagePath(merged.annualGiftImage);
+  merged.artistProfileImage = normalizeImagePath(merged.artistProfileImage) || INITIAL_HOMEPAGE_SETTINGS.artistProfileImage;
+  merged.artistProfileSquare = normalizeImagePath(merged.artistProfileSquare) || merged.artistProfileImage || INITIAL_HOMEPAGE_SETTINGS.artistProfileSquare;
+
+  return merged;
+};
+
+  // Homepage Dynamic Editable Settings with Central Server Persistence
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>(() => {
     try {
       const saved = localStorage.getItem(HOMEPAGE_SETTINGS_KEY);
       if (saved) {
-        const parsed: HomepageSettings = JSON.parse(saved);
-        if (parsed.heroImageUrl?.startsWith('/src/assets/images/')) {
-          parsed.heroImageUrl = INITIAL_HOMEPAGE_SETTINGS.heroImageUrl;
-        }
-        if (parsed.aboutImageUrl?.startsWith('/src/assets/images/')) {
-          parsed.aboutImageUrl = INITIAL_HOMEPAGE_SETTINGS.aboutImageUrl;
-        }
-        if (parsed.annualGiftImage?.startsWith('/src/assets/images/')) {
-          parsed.annualGiftImage = INITIAL_HOMEPAGE_SETTINGS.annualGiftImage;
-        }
-        if (parsed.artistProfileImage?.startsWith('/src/assets/images/')) {
-          parsed.artistProfileImage = INITIAL_HOMEPAGE_SETTINGS.artistProfileImage;
-        }
-        if (parsed.artistProfileSquare?.startsWith('/src/assets/images/')) {
-          parsed.artistProfileSquare = INITIAL_HOMEPAGE_SETTINGS.artistProfileSquare;
-        }
-        return {
-          ...INITIAL_HOMEPAGE_SETTINGS,
-          ...parsed,
-          artistProfileImage: parsed.artistProfileImage || INITIAL_HOMEPAGE_SETTINGS.artistProfileImage,
-          artistProfileSquare: parsed.artistProfileSquare || parsed.artistProfileImage || INITIAL_HOMEPAGE_SETTINGS.artistProfileSquare,
-        };
+        return sanitizeSettings(JSON.parse(saved));
       }
     } catch (e) {
       console.error(e);
@@ -461,50 +464,130 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return INITIAL_HOMEPAGE_SETTINGS;
   });
 
+  const [settingsLoading, setSettingsLoading] = useState(true);
+
+  // Reload settings from central server database
+  const reloadSettings = async (): Promise<HomepageSettings | null> => {
+    try {
+      const res = await fetch(`/api/settings?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.success && data.settings) {
+          const clean = sanitizeSettings(data.settings);
+          setHomepageSettings(clean);
+          try {
+            localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(clean));
+          } catch {}
+          const icon = clean.artistProfileSquare || clean.artistProfileImage;
+          if (icon) {
+            updateWebsiteFavicon(icon);
+          }
+          return clean;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to reload settings from server:', err);
+    }
+    return null;
+  };
+
   // Load server-persisted homepage & artist profile settings on initial mount
   useEffect(() => {
-    fetch('/api/settings')
+    let isMounted = true;
+    fetch(`/api/settings?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+    })
       .then((res) => res.json())
       .then((data) => {
+        if (!isMounted) return;
         if (data && data.success && data.settings) {
-          setHomepageSettings((prev) => {
-            const merged: HomepageSettings = {
-              ...prev,
-              ...data.settings,
-              artistProfileImage: data.settings.artistProfileImage || prev.artistProfileImage || INITIAL_HOMEPAGE_SETTINGS.artistProfileImage,
-              artistProfileSquare: data.settings.artistProfileSquare || data.settings.artistProfileImage || prev.artistProfileSquare || INITIAL_HOMEPAGE_SETTINGS.artistProfileSquare,
-            };
-            try {
-              localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(merged));
-            } catch (e) {
-              console.warn('LocalStorage sync warning:', e);
-            }
-            return merged;
-          });
+          const clean = sanitizeSettings(data.settings);
+          setHomepageSettings(clean);
+          try {
+            localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(clean));
+          } catch (e) {
+            console.warn('LocalStorage sync warning:', e);
+          }
+          const icon = clean.artistProfileSquare || clean.artistProfileImage;
+          if (icon) {
+            updateWebsiteFavicon(icon);
+          }
         }
       })
       .catch((err) => {
         console.warn('Using local persistent storage for settings:', err);
+      })
+      .finally(() => {
+        if (isMounted) setSettingsLoading(false);
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const updateHomepageSettings = (updates: Partial<HomepageSettings>) => {
-    setHomepageSettings((prev) => {
-      const updated = { ...prev, ...updates };
-      try {
-        localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(updated));
-      } catch (err) {
-        console.warn('LocalStorage error while saving homepageSettings:', err);
-      }
-      fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
-      }).catch((err) => {
-        console.warn('Backend settings sync failed:', err);
-      });
-      return updated;
+  const updateHomepageSettings = async (
+    updates: Partial<HomepageSettings>
+  ): Promise<{ success: boolean; message?: string }> => {
+    // 1. Prepare sanitized new state
+    const updated: HomepageSettings = sanitizeSettings({
+      ...homepageSettings,
+      ...updates,
     });
+
+    // 2. Optimistic local update
+    setHomepageSettings(updated);
+    try {
+      localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(updated));
+    } catch (err) {
+      console.warn('LocalStorage error while saving homepageSettings:', err);
+    }
+    const icon = updated.artistProfileSquare || updated.artistProfileImage;
+    if (icon) {
+      updateWebsiteFavicon(icon);
+    }
+
+    // 3. Central Server Persistence
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        body: JSON.stringify(updated),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        if (data.settings) {
+          const confirmed = sanitizeSettings(data.settings);
+          setHomepageSettings(confirmed);
+          try {
+            localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(confirmed));
+          } catch {}
+        }
+        return {
+          success: true,
+          message: data.message || 'Settings saved and persisted centrally to database.',
+        };
+      } else {
+        return {
+          success: false,
+          message: data.message || 'Server save returned unsuccessful status.',
+        };
+      }
+    } catch (err: any) {
+      console.error('Backend settings sync failed:', err);
+      return {
+        success: false,
+        message: err?.message || 'Network error syncing with server database.',
+      };
+    }
   };
 
   // Distribution Inquiries (Website Artist Submissions)
@@ -1055,6 +1138,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         recordPageView,
         homepageSettings,
         updateHomepageSettings,
+        reloadSettings,
+        settingsLoading,
         pointTransactions,
         sendBonusPoints,
         distributionInquiries,
