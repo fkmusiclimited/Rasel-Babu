@@ -31,7 +31,7 @@ export const About: React.FC<AboutProps> = ({ onNavigate }) => {
           <div className="lg:col-span-5 relative">
             <div className="relative aspect-[3/4] rounded-2xl overflow-hidden border border-amber-500/30 shadow-2xl shadow-black">
               <img
-                src={homepageSettings.aboutImageUrl || homepageSettings.heroImageUrl || PORTRAIT_IMAGE}
+                src={homepageSettings.aboutImageUrl || PORTRAIT_IMAGE}
                 alt="Rasel Babu Celebrity Portrait"
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"

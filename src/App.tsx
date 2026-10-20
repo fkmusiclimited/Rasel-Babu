@@ -10,6 +10,7 @@ import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { PersistentPlayer } from './components/audio/PersistentPlayer';
 import { SocialBarAd } from './components/ads/SocialBarAd';
+import { updateWebsiteFavicon } from './utils/imageCompress';
 
 // Pages
 import { Home } from './pages/Home';
@@ -40,7 +41,7 @@ const MainContent: React.FC = () => {
     return '/';
   });
   const [currentParam, setCurrentParam] = useState<string>('photo-1');
-  const { recordPageView } = useData();
+  const { recordPageView, homepageSettings } = useData();
 
   const handleNavigate = (path: string, param?: string) => {
     setCurrentPath(path);
@@ -52,6 +53,14 @@ const MainContent: React.FC = () => {
   useEffect(() => {
     recordPageView('/');
   }, []);
+
+  // Persist & sync website favicon to artist profile photo
+  useEffect(() => {
+    const iconUrl = homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage;
+    if (iconUrl) {
+      updateWebsiteFavicon(iconUrl);
+    }
+  }, [homepageSettings.artistProfileSquare, homepageSettings.artistProfileImage]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#08080a] text-zinc-100 selection:bg-pink-600 selection:text-white">

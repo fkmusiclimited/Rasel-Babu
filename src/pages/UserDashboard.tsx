@@ -46,7 +46,7 @@ interface UserDashboardProps {
 
 export const UserDashboard: React.FC<UserDashboardProps> = ({ onNavigate }) => {
   const { currentUser, logout, updateProfile, isAdminOrManager, changePassword } = useAuth();
-  const { photos, userMessages, sendUserMessage, likePhoto, orders, products, pointTransactions, openProductView } = useData();
+  const { photos, userMessages, sendUserMessage, likePhoto, orders, products, pointTransactions, openProductView, homepageSettings } = useData();
 
   // Active Tab inside User Account
   const [activeAccountTab, setActiveAccountTab] = useState<'overview' | 'points' | 'leaderboard' | 'messages' | 'shopping' | 'gallery' | 'profile'>('overview');
@@ -225,7 +225,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onNavigate }) => {
             <div className="flex items-center gap-5">
               <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-amber-400/80 shadow-xl shrink-0 group">
                 <img
-                  src={PORTRAIT_IMAGE}
+                  src={homepageSettings.artistProfileImage || PORTRAIT_IMAGE}
                   alt="Rasel Babu"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />

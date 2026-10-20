@@ -70,3 +70,109 @@ export const compressImageFile = (
     reader.readAsDataURL(file);
   });
 };
+
+/**
+ * Creates a clean 1:1 square centered crop for Favicon and circular avatars.
+ * Supports file objects or image data URL strings.
+ */
+export const createSquareCrop = (
+  source: File | string,
+  targetDimension = 256
+): Promise<string> => {
+  return new Promise((resolve) => {
+    const processImage = (src: string) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const { naturalWidth: width, naturalHeight: height } = img;
+          const minDim = Math.min(width, height);
+          const sx = (width - minDim) / 2;
+          const sy = (height - minDim) / 2;
+
+          const canvas = document.createElement('canvas');
+          canvas.width = targetDimension;
+          canvas.height = targetDimension;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(src);
+            return;
+          }
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+
+          // Center-crop 1:1 onto square canvas
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, targetDimension, targetDimension);
+
+          // Export as PNG for clean sharp favicon rendering
+          const squareDataUrl = canvas.toDataURL('image/png');
+          resolve(squareDataUrl);
+        } catch (err) {
+          console.warn('Square crop fallback:', err);
+          resolve(src);
+        }
+      };
+
+      img.onerror = () => resolve(src);
+      img.src = src;
+    };
+
+    if (typeof source === 'string') {
+      processImage(source);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result;
+        if (typeof result === 'string') {
+          processImage(result);
+        } else {
+          resolve('');
+        }
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(source);
+    }
+  });
+};
+
+/**
+ * Dynamically updates the browser favicon element in document <head>
+ */
+export const updateWebsiteFavicon = (iconUrl: string) => {
+  if (!iconUrl || typeof document === 'undefined') return;
+
+  try {
+    const isPng = iconUrl.startsWith('data:image/png') || iconUrl.endsWith('.png');
+    const mimeType = isPng ? 'image/png' : 'image/jpeg';
+    const selectors = [
+      "link[rel~='icon']",
+      "link[rel='icon']",
+      "link[rel='shortcut icon']",
+      "link[rel='apple-touch-icon']",
+      '#app-favicon',
+    ];
+
+    let updatedAny = false;
+    selectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((el) => {
+        const link = el as HTMLLinkElement;
+        link.type = mimeType;
+        link.href = iconUrl;
+        updatedAny = true;
+      });
+    });
+
+    if (!updatedAny) {
+      const link = document.createElement('link');
+      link.id = 'app-favicon';
+      link.rel = 'icon';
+      link.type = mimeType;
+      link.href = iconUrl;
+      document.head.appendChild(link);
+    }
+  } catch (e) {
+    console.warn('Failed to update favicon:', e);
+  }
+};

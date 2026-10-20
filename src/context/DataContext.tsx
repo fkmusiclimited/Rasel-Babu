@@ -442,7 +442,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (parsed.annualGiftImage?.startsWith('/src/assets/images/')) {
           parsed.annualGiftImage = INITIAL_HOMEPAGE_SETTINGS.annualGiftImage;
         }
-        return { ...INITIAL_HOMEPAGE_SETTINGS, ...parsed };
+        if (parsed.artistProfileImage?.startsWith('/src/assets/images/')) {
+          parsed.artistProfileImage = INITIAL_HOMEPAGE_SETTINGS.artistProfileImage;
+        }
+        if (parsed.artistProfileSquare?.startsWith('/src/assets/images/')) {
+          parsed.artistProfileSquare = INITIAL_HOMEPAGE_SETTINGS.artistProfileSquare;
+        }
+        return {
+          ...INITIAL_HOMEPAGE_SETTINGS,
+          ...parsed,
+          artistProfileImage: parsed.artistProfileImage || INITIAL_HOMEPAGE_SETTINGS.artistProfileImage,
+          artistProfileSquare: parsed.artistProfileSquare || parsed.artistProfileImage || INITIAL_HOMEPAGE_SETTINGS.artistProfileSquare,
+        };
       }
     } catch (e) {
       console.error(e);
@@ -450,8 +461,50 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return INITIAL_HOMEPAGE_SETTINGS;
   });
 
+  // Load server-persisted homepage & artist profile settings on initial mount
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.success && data.settings) {
+          setHomepageSettings((prev) => {
+            const merged: HomepageSettings = {
+              ...prev,
+              ...data.settings,
+              artistProfileImage: data.settings.artistProfileImage || prev.artistProfileImage || INITIAL_HOMEPAGE_SETTINGS.artistProfileImage,
+              artistProfileSquare: data.settings.artistProfileSquare || data.settings.artistProfileImage || prev.artistProfileSquare || INITIAL_HOMEPAGE_SETTINGS.artistProfileSquare,
+            };
+            try {
+              localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(merged));
+            } catch (e) {
+              console.warn('LocalStorage sync warning:', e);
+            }
+            return merged;
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn('Using local persistent storage for settings:', err);
+      });
+  }, []);
+
   const updateHomepageSettings = (updates: Partial<HomepageSettings>) => {
-    setHomepageSettings((prev) => ({ ...prev, ...updates }));
+    setHomepageSettings((prev) => {
+      const updated = { ...prev, ...updates };
+      try {
+        localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(updated));
+      } catch (err) {
+        console.warn('LocalStorage error while saving homepageSettings:', err);
+      }
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      }).catch((err) => {
+        console.warn('Backend settings sync failed:', err);
+      });
+      return updated;
+    });
   };
 
   // Distribution Inquiries (Website Artist Submissions)

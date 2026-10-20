@@ -56,7 +56,7 @@ import {
 import { UserRole, PhotoItem, NewsArticle, VideoItem, TourEvent, Product, OrderItem, HomepageSettings, DistributionInquiry, User } from '../types';
 import { extractYouTubeId } from './Videos';
 import { YearlyPointsGraph } from '../components/points/YearlyPointsGraph';
-import { compressImageFile } from '../utils/imageCompress';
+import { compressImageFile, createSquareCrop, updateWebsiteFavicon } from '../utils/imageCompress';
 import { DeleteConfirmModal } from '../components/common/DeleteConfirmModal';
 import { HERO_STAGE_IMAGE, TRADITIONAL_PUNJABI_IMAGE, PORTRAIT_IMAGE, STUDIO_IMAGE } from '../data/seedData';
 
@@ -302,6 +302,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     }
   };
 
+  // Official Artist Profile Photo & Favicon State
+  const [homeArtistProfileImage, setHomeArtistProfileImage] = useState(
+    homepageSettings.artistProfileImage || PORTRAIT_IMAGE
+  );
+  const [homeArtistProfileSquare, setHomeArtistProfileSquare] = useState(
+    homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage || PORTRAIT_IMAGE
+  );
+  const [isProfilePhotoUploading, setIsProfilePhotoUploading] = useState(false);
+  const [profilePhotoSaveNotice, setProfilePhotoSaveNotice] = useState<string | null>(null);
+
+  // Sync state when homepageSettings updates from persistent storage
+  React.useEffect(() => {
+    if (homepageSettings.artistProfileImage) {
+      setHomeArtistProfileImage(homepageSettings.artistProfileImage);
+    }
+    if (homepageSettings.artistProfileSquare) {
+      setHomeArtistProfileSquare(homepageSettings.artistProfileSquare);
+    }
+  }, [homepageSettings.artistProfileImage, homepageSettings.artistProfileSquare]);
+
   // Website Homepage Live CMS editor state
   const [homeHeroTagline, setHomeHeroTagline] = useState(homepageSettings.heroTagline);
   const [homeHeroTitle, setHomeHeroTitle] = useState(homepageSettings.heroTitle);
@@ -435,9 +455,65 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsProfilePhotoUploading(true);
+    try {
+      // 1. High-resolution compressed profile image
+      const compressedProfile = await compressImageFile(file, 1000, 0.85);
+      // 2. Exact 1:1 square crop for favicon and avatars
+      const squareCrop = await createSquareCrop(file, 256);
+
+      const profileUrl = compressedProfile || squareCrop;
+      const squareUrl = squareCrop || compressedProfile;
+
+      setHomeArtistProfileImage(profileUrl);
+      setHomeArtistProfileSquare(squareUrl);
+    } catch (err) {
+      console.error('Error processing profile photo:', err);
+    } finally {
+      setIsProfilePhotoUploading(false);
+    }
+  };
+
+  const handleProfilePhotoUrlChange = async (url: string) => {
+    setHomeArtistProfileImage(url);
+    if (url.trim()) {
+      try {
+        const square = await createSquareCrop(url.trim(), 256);
+        setHomeArtistProfileSquare(square);
+      } catch {
+        setHomeArtistProfileSquare(url);
+      }
+    }
+  };
+
+  const handleSelectProfilePreset = async (presetPath: string) => {
+    setHomeArtistProfileImage(presetPath);
+    try {
+      const square = await createSquareCrop(presetPath, 256);
+      setHomeArtistProfileSquare(square);
+    } catch {
+      setHomeArtistProfileSquare(presetPath);
+    }
+  };
+
+  const handleSaveArtistProfilePhoto = () => {
+    updateHomepageSettings({
+      artistProfileImage: homeArtistProfileImage,
+      artistProfileSquare: homeArtistProfileSquare,
+    });
+    updateWebsiteFavicon(homeArtistProfileSquare || homeArtistProfileImage);
+    setProfilePhotoSaveNotice('রাসেল বাবুর অফিসিয়াল প্রোফাইল ছবি ও ব্রাউজার ফেভিকন সফলভাবে সংরক্ষিত হয়েছে! (Saved persistently)');
+    setTimeout(() => setProfilePhotoSaveNotice(null), 5000);
+  };
+
   const handleSaveHomepageCMS = (e: React.FormEvent) => {
     e.preventDefault();
     updateHomepageSettings({
+      artistProfileImage: homeArtistProfileImage,
+      artistProfileSquare: homeArtistProfileSquare,
       heroTagline: homeHeroTagline,
       heroTitle: homeHeroTitle,
       heroSubtitle: homeHeroSubtitle,
@@ -485,6 +561,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
       footerCopyright: homeFooterCopyright,
       footerTagline: homeFooterTagline,
     });
+    updateWebsiteFavicon(homeArtistProfileSquare || homeArtistProfileImage);
     setHomeSaveSuccess('All website texts, photos, and configurations saved successfully! Live across entire portal.');
     setTimeout(() => setHomeSaveSuccess(null), 5000);
   };
@@ -878,8 +955,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
             {/* Admin Profile Card */}
             <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/90 shadow-xl space-y-3">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-pink-600 text-black font-display font-black text-base flex items-center justify-center shrink-0 shadow-md shadow-amber-400/20">
-                  RB
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-pink-600 text-black font-display font-black text-base flex items-center justify-center shrink-0 shadow-md shadow-amber-400/20 overflow-hidden">
+                  {homeArtistProfileSquare || homeArtistProfileImage || homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage ? (
+                    <img
+                      src={homeArtistProfileSquare || homeArtistProfileImage || homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage}
+                      alt="Rasel Babu"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    'RB'
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold text-white truncate">{currentUser?.name || 'Rasel Babu Admin'}</div>
@@ -1077,23 +1162,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                     <p className="text-xs text-zinc-300 max-w-xl">
                       স্বাগতম অ্যাডমিন প্যানেলে। এখান থেকে আপনি সরাসরি <strong>শপিং ও অর্ডার ট্র্যাকিং</strong>, <strong>ফ্যান অ্যাকাউন্ট ও ইনস্ট্যান্ট পয়েন্ট বোনাস উপহার</strong> এবং <strong>ইউজারদের মেসেজ সিন ও রিপ্লাই</strong> প্রদান করতে পারবেন।
                     </p>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <button
-                      onClick={() => setActiveTab('shop')}
-                      className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>Manage Products</span>
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('videos')}
-                      className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Youtube className="w-3.5 h-3.5" />
-                      <span>Edit Video Links</span>
-                    </button>
                   </div>
                 </div>
 
@@ -2986,6 +3054,225 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
             )}
 
             <form onSubmit={handleSaveHomepageCMS} className="space-y-8">
+              {/* SECTION 0: RASEL BABU OFFICIAL PROFILE PHOTO & WEBSITE FAVICON MANAGEMENT */}
+              <div
+                id="artist-profile-photo-cms-section"
+                className="bg-gradient-to-br from-zinc-900/90 via-zinc-900/70 to-amber-950/20 border-2 border-amber-500/40 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800/80 pb-4">
+                  <div className="space-y-1">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 font-mono text-[11px] font-bold">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>OFFICIAL ARTIST PROFILE PHOTO &amp; FAVICON (প্রধান প্রোফাইল ছবি ও ফেভিকন)</span>
+                    </span>
+                    <h4 className="text-xl font-bold text-white flex items-center gap-2 mt-2">
+                      <Camera className="w-5 h-5 text-amber-400" />
+                      <span>Rasel Babu Profile Photo &amp; Website Tab Favicon Setting</span>
+                    </h4>
+                    <p className="text-xs text-zinc-300 leading-relaxed max-w-2xl">
+                      আপলোড করুন, প্রিভিউ দেখুন, পরিবর্তন করুন এবং সংরক্ষণ করুন। এই ছবিটি স্থায়ীভাবে ডাটাবেজ ও সার্ভারে সংরক্ষিত থাকবে এবং পেজ রিফ্রেশ করার পরেও অক্ষুণ্ণ থাকবে। পুরো ওয়েবসাইটে যেখানে যেখানে রাসেল বাবুর প্রোফাইল ছবি রয়েছে (যেমন: About পেজ, হোমপেজ সাফল্য, ফ্যান ড্যাশবোর্ড ইত্যাদি) সেখানে এই ছবি প্রদর্শিত হবে এবং এর ১:১ স্কয়ার ক্রপটি স্বয়ংক্রিয়ভাবে ওয়েবসাইটের ব্রাউজার ফেভিকন (Tab Favicon) হিসেবে ব্যবহৃত হবে।
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleSaveArtistProfilePhoto}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-black font-bold text-xs shadow-lg shadow-amber-400/25 flex items-center gap-2 transition-all cursor-pointer active:scale-95"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Save Profile &amp; Favicon (সেভ করুন)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {profilePhotoSaveNotice && (
+                  <div className="p-4 rounded-xl bg-emerald-950/70 border border-emerald-500/60 text-emerald-200 text-xs sm:text-sm flex items-center gap-2.5 shadow-xl animate-fade-in">
+                    <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <span className="font-medium">{profilePhotoSaveNotice}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Left Column: Upload Controls & Direct Path */}
+                  <div className="lg:col-span-7 space-y-5">
+                    {/* Upload from Device */}
+                    <div className="p-4.5 rounded-2xl bg-zinc-950/70 border border-zinc-800 space-y-3">
+                      <label className="block text-xs font-bold text-white uppercase tracking-wider font-mono">
+                        1. Upload Profile Photo from Device (ডিভাইস থেকে ছবি আপলোড)
+                      </label>
+                      <p className="text-[11px] text-zinc-400">
+                        সরাসরি মোবাইল বা কম্পিউটার থেকে রাসেল বাবুর যেকোনো হাই-কোয়ালিটি ছবি সিলেক্ট করুন। সিস্টেম স্বয়ংক্রিয়ভাবে অপটিমাইজ করে একটি ফুল প্রোফাইল ইমেজ এবং নিখুঁত ১:১ স্কয়ার ফেভিকন তৈরি করবে।
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3 pt-1">
+                        <label className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-black font-bold text-xs cursor-pointer flex items-center gap-2.5 shadow-md shadow-amber-400/20 active:scale-95 transition-all">
+                          {isProfilePhotoUploading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                              <span>Processing &amp; Cropping Photo...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4" />
+                              <span>Select Image to Upload (ফটো পছন্দ করুন)</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleProfilePhotoUpload}
+                            disabled={isProfilePhotoUploading}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectProfilePreset(PORTRAIT_IMAGE)}
+                          className="px-4 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium border border-zinc-700 cursor-pointer transition-colors"
+                        >
+                          Reset to Original Portrait
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Direct Image URL input */}
+                    <div className="p-4.5 rounded-2xl bg-zinc-950/70 border border-zinc-800 space-y-2">
+                      <label className="block text-xs font-bold text-white uppercase tracking-wider font-mono">
+                        2. Or Enter Photo URL / Cloud Link (অথবা ইমেজের সরাসরি লিংক দিন)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={homeArtistProfileImage}
+                          onChange={(e) => handleProfilePhotoUrlChange(e.target.value)}
+                          placeholder="https://... or /assets/images/..."
+                          className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Quick Official Presets */}
+                    <div className="p-4.5 rounded-2xl bg-zinc-950/70 border border-zinc-800 space-y-2.5">
+                      <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider font-bold block">
+                        3. Quick Official Artist Photo Presets (অফিসিয়াল ফটো প্রিসেট):
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { label: 'Celebrity Portrait (ডিফল্ট পোর্ট্রেট)', path: PORTRAIT_IMAGE },
+                          { label: 'Concert Stage Live (মঞ্চের ছবি)', path: HERO_STAGE_IMAGE },
+                          { label: 'Traditional Kurta (পাঞ্জাবি পরিহিত)', path: TRADITIONAL_PUNJABI_IMAGE },
+                          { label: 'Studio Session (স্টুডিও সেশন)', path: STUDIO_IMAGE },
+                        ].map((pr) => (
+                          <button
+                            key={pr.path}
+                            type="button"
+                            onClick={() => handleSelectProfilePreset(pr.path)}
+                            className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs border border-zinc-700 hover:border-amber-400/50 cursor-pointer transition-all flex items-center gap-1.5"
+                          >
+                            <Sparkles className="w-3 h-3 text-amber-400" />
+                            <span>{pr.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Live Previews (Dual: Public Artist Profile Card + Real Browser Tab Favicon Simulation) */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <div className="p-4.5 rounded-2xl bg-zinc-950/90 border border-zinc-800 space-y-4 shadow-xl">
+                      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                        <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Live Multi-Placement Previews</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
+                          Active Sync
+                        </span>
+                      </div>
+
+                      {/* Preview A: Browser Tab & Favicon Simulation */}
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] font-mono text-zinc-400">
+                          A. Browser Tab Favicon Preview (ব্রাউজার ট্যাবে যেমন দেখাবে):
+                        </span>
+                        <div className="bg-[#1e1f22] rounded-t-xl p-2.5 border border-zinc-700 shadow-md">
+                          <div className="flex items-center gap-2 max-w-[240px] bg-[#2b2d30] px-3 py-1.5 rounded-lg border-t-2 border-amber-400">
+                            {/* Favicon Icon */}
+                            <div className="w-4 h-4 rounded shrink-0 overflow-hidden bg-black flex items-center justify-center">
+                              <img
+                                src={homeArtistProfileSquare || homeArtistProfileImage}
+                                alt="Favicon"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <span className="text-[11px] font-medium text-zinc-200 truncate flex-1">
+                              Rasel Babu | Official Artist...
+                            </span>
+                            <span className="text-[11px] text-zinc-500 hover:text-white cursor-default">×</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Preview B: Main Artist Portrait Profile Card */}
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] font-mono text-zinc-400">
+                          B. Website Public Profile Photo (About ও ড্যাশবোর্ডে যেমন দেখাবে):
+                        </span>
+                        <div className="flex items-center gap-4 p-3 bg-zinc-900/60 rounded-xl border border-zinc-800">
+                          {/* Portrait preview card */}
+                          <div className="w-24 h-32 rounded-xl overflow-hidden border-2 border-amber-500/40 shadow-lg shrink-0 relative bg-black group">
+                            <img
+                              src={homeArtistProfileImage}
+                              alt="Profile Preview"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-1.5">
+                              <span className="text-[8px] font-mono text-amber-300">Public Card</span>
+                            </div>
+                          </div>
+
+                          {/* 1:1 Square Avatar Preview */}
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-3">
+                              <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-amber-400 shadow-md shrink-0 bg-black">
+                                <img
+                                  src={homeArtistProfileSquare || homeArtistProfileImage}
+                                  alt="Square Avatar"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-white truncate">Rasel Babu</p>
+                                <p className="text-[10px] text-amber-400 font-mono">1:1 Square Favicon</p>
+                                <span className="inline-block mt-0.5 text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">
+                                  256×256 High-Res
+                                </span>
+                              </div>
+                            </div>
+
+                            <p className="text-[11px] text-zinc-400 leading-tight">
+                              This photo represents Rasel Babu globally across all pages and the browser tab.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Dedicated Save Action */}
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={handleSaveArtistProfilePhoto}
+                          className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-black font-bold text-xs shadow-lg shadow-amber-400/20 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>Save Rasel Babu Profile Photo &amp; Favicon Now</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* SECTION 1: HERO HEADER TEXTS */}
               <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6 space-y-4">
                 <h4 className="text-base font-bold text-white flex items-center gap-2 border-b border-zinc-800/80 pb-3">

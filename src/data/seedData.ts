@@ -732,6 +732,8 @@ export const INITIAL_ORDERS: OrderItem[] = [
 ];
 
 export const INITIAL_HOMEPAGE_SETTINGS: HomepageSettings = {
+  artistProfileImage: PORTRAIT_IMAGE,
+  artistProfileSquare: PORTRAIT_IMAGE,
   heroTagline: 'OFFICIAL ARTIST PORTAL · Dhaka, Bangladesh',
   heroTitle: 'Rasel Babu',
   heroSubtitle: 'Actor, Singer, Lyricist & Model | FK Music',

@@ -13,6 +13,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'raselbabu_secure_session_s
 const DATA_DIR = path.resolve('.data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const RESETS_FILE = path.join(DATA_DIR, 'resets.json');
+const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -820,7 +821,42 @@ app.post('/api/admin/users/:id/points', requireAdmin, (req, res) => {
   users[idx].points = Math.max(0, current + Number(points || 0));
   writeUsers(users);
 
-  res.json({ success: true, user: sanitizeUser(users[idx]) });
+  res.json({ success: true, points: users[idx].points });
+});
+
+// ---------------------------------------------------------------------------
+// Settings Persistence API (Dual-layer persistence for Admin Website Settings)
+// ---------------------------------------------------------------------------
+app.get('/api/settings', (_req, res) => {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
+      res.json({ success: true, settings: data });
+      return;
+    }
+  } catch (err) {
+    console.error('Failed to read settings file:', err);
+  }
+  res.json({ success: true, settings: null });
+});
+
+app.post('/api/settings', (req, res) => {
+  try {
+    let current = {};
+    if (fs.existsSync(SETTINGS_FILE)) {
+      try {
+        current = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
+      } catch {
+        current = {};
+      }
+    }
+    const settings = { ...current, ...req.body };
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
+    res.json({ success: true, message: 'Settings saved to persistent storage.', settings });
+  } catch (err) {
+    console.error('Failed to save settings file:', err);
+    res.status(500).json({ success: false, message: 'Failed to write settings' });
+  }
 });
 
 // ---------------------------------------------------------------------------

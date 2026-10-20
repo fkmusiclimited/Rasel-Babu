@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
+import { PORTRAIT_IMAGE } from '../../data/seedData';
 import { Menu, X, Shield, User as UserIcon, LogOut, Music2, Sparkles } from 'lucide-react';
 
 interface NavbarProps {
@@ -9,6 +11,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
   const { currentUser, logout, isAdminOrManager } = useAuth();
+  const { homepageSettings } = useData();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
@@ -30,11 +33,18 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
   return (
     <header className="sticky top-0 z-50 w-full bg-[#08080a]/90 backdrop-blur-md border-b border-zinc-800/80">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-6 px-4 sm:px-6 lg:px-8 h-18">
-        {/* Zone 1: Brand wordmark with subtle music wave animation */}
+        {/* Zone 1: Brand wordmark with artist avatar and subtle music wave animation */}
         <button
           onClick={() => handleNavClick('/')}
-          className="text-left group flex items-center gap-2 cursor-pointer focus:outline-none shrink-0"
+          className="text-left group flex items-center gap-2.5 cursor-pointer focus:outline-none shrink-0"
         >
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border border-amber-400/50 shadow-sm shrink-0 bg-zinc-900 group-hover:border-amber-400 group-hover:scale-105 transition-all">
+            <img
+              src={homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage || PORTRAIT_IMAGE}
+              alt="Rasel Babu"
+              className="w-full h-full object-cover"
+            />
+          </div>
           <span className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-white group-hover:text-amber-400 transition-colors whitespace-nowrap">
             RASEL BABU
           </span>
@@ -126,17 +136,44 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
           )}
         </div>
 
-        {/* Mobile Hamburger Toggle */}
+        {/* Mobile Header Actions & Hamburger Toggle */}
         <div className="flex items-center gap-2 lg:hidden">
+          {!currentUser ? (
+            <button
+              onClick={() => handleNavClick('/login')}
+              className="px-3 py-1.5 text-xs font-semibold text-zinc-100 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-amber-400 rounded-lg whitespace-nowrap cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm"
+            >
+              <UserIcon className="w-3.5 h-3.5 text-amber-400" />
+              <span>Login / লগইন</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => handleNavClick(isAdminOrManager ? '/admin' : '/dashboard')}
+              className="px-2.5 py-1.5 text-xs font-bold text-black bg-gradient-to-r from-amber-400 to-amber-500 rounded-lg whitespace-nowrap cursor-pointer shadow-sm flex items-center gap-1"
+            >
+              {isAdminOrManager ? (
+                <>
+                  <Shield className="w-3 h-3 text-black" />
+                  <span>Admin</span>
+                </>
+              ) : (
+                <>
+                  <UserIcon className="w-3 h-3 text-black" />
+                  <span>Dashboard</span>
+                </>
+              )}
+            </button>
+          )}
+
           <button
             onClick={() => handleNavClick('/contact')}
-            className="sm:hidden px-2.5 py-1 text-xs font-medium text-black bg-amber-400 rounded-md whitespace-nowrap"
+            className="hidden sm:inline-block px-2.5 py-1 text-xs font-medium text-black bg-amber-400 rounded-md whitespace-nowrap"
           >
             Booking
           </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-zinc-300 hover:text-white rounded-md hover:bg-zinc-800"
+            className="p-2 text-zinc-300 hover:text-white rounded-md hover:bg-zinc-800 cursor-pointer"
             aria-label="Toggle mobile menu"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -147,6 +184,21 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-zinc-800 bg-[#0c0c10] px-4 pt-3 pb-6 space-y-2 animate-fade-in">
+          {/* Artist Identity Bar */}
+          <div className="flex items-center gap-3 p-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl mb-2">
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-amber-400/40 shrink-0 bg-black">
+              <img
+                src={homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage || PORTRAIT_IMAGE}
+                alt="Rasel Babu"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-white leading-tight">Rasel Babu</div>
+              <div className="text-[11px] text-amber-400 font-mono">Official Artist Portal</div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-2 pt-1 pb-3 border-b border-zinc-800">
             {navLinks.map((link) => (
               <button
@@ -205,18 +257,19 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
                 </button>
               </>
             ) : (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   onClick={() => handleNavClick('/login')}
-                  className="px-3 py-2 text-center text-sm font-medium text-zinc-200 bg-zinc-800 rounded-lg"
+                  className="w-full py-2.5 px-3 text-center text-xs font-bold text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-colors"
                 >
-                  Sign In
+                  <UserIcon className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Login / লগইন</span>
                 </button>
                 <button
                   onClick={() => handleNavClick('/signup')}
-                  className="px-3 py-2 text-center text-sm font-medium text-black bg-amber-400 rounded-lg font-semibold"
+                  className="w-full py-2.5 px-3 text-center text-xs font-bold text-black bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all"
                 >
-                  Join Fan Club
+                  <span>Join Fan Club</span>
                 </button>
               </div>
             )}
