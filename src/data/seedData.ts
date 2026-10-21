@@ -495,7 +495,7 @@ export const INITIAL_TOUR_EVENTS: TourEvent[] = [
 export const INITIAL_ADSTERRA_CONFIG: AdsterraConfig = {
   enabled: true,
   publisherId: 'bicea_pub_b1064cd1b5',
-  socialBarEnabled: true,
+  socialBarEnabled: false, // Permanently turned off top floating ad
   testMode: false, // Live real Adsterra ads active
   bannerKeys: {
     leaderboard728x90: '1fe9cd4f9a13d2eb6bf668247a7c5e55',

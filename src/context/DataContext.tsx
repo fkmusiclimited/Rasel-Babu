@@ -438,7 +438,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ];
   });
 
-  // Adsterra Config
+  // Adsterra Config (Top floating ad permanently disabled per user instruction)
   const [adsterraConfig, setAdsterraConfig] = useState<AdsterraConfig>(() => {
     try {
       const saved = localStorage.getItem(ADS_KEY);
@@ -447,9 +447,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return {
           ...INITIAL_ADSTERRA_CONFIG,
           ...parsed,
+          socialBarEnabled: false, // Ensure top floating ad stays permanently off
           bannerKeys: {
             ...INITIAL_ADSTERRA_CONFIG.bannerKeys,
             ...(parsed.bannerKeys || {}),
+            socialBarKey: '',
           },
           pagePlacements: {
             ...INITIAL_ADSTERRA_CONFIG.pagePlacements,
@@ -460,7 +462,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.error(e);
     }
-    return INITIAL_ADSTERRA_CONFIG;
+    return { ...INITIAL_ADSTERRA_CONFIG, socialBarEnabled: false };
   });
 
   // Analytics
@@ -503,30 +505,57 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
 
   const [settingsLoading, setSettingsLoading] = useState(true);
 
-  // Reload settings from central server database
-  const reloadSettings = async (): Promise<HomepageSettings | null> => {
+  // Helper to fetch settings from API or static mirror
+  const fetchSettingsData = async (): Promise<HomepageSettings | null> => {
+    // Strategy 1: Check full-stack Express API
     try {
       const res = await fetch(`/api/settings?t=${Date.now()}`, {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
       });
-      if (res.ok) {
+      const ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.includes('application/json')) {
         const data = await res.json();
         if (data && data.success && data.settings) {
-          const clean = sanitizeSettings(data.settings);
-          setHomepageSettings(clean);
-          try {
-            localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(clean));
-          } catch {}
-          const icon = clean.artistProfileSquare || clean.artistProfileImage;
-          if (icon) {
-            updateWebsiteFavicon(icon);
-          }
-          return clean;
+          return sanitizeSettings(data.settings);
         }
       }
-    } catch (err) {
-      console.warn('Failed to reload settings from server:', err);
+    } catch {}
+
+    // Strategy 2: Check persistent static mirror (/settings.json on static hosts like Netlify/Vercel)
+    try {
+      const res = await fetch(`/settings.json?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      });
+      const ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.includes('application/json')) {
+        const data = await res.json();
+        if (data && typeof data === 'object') {
+          const settingsObj = data.settings || data;
+          if (settingsObj && typeof settingsObj === 'object') {
+            return sanitizeSettings(settingsObj);
+          }
+        }
+      }
+    } catch {}
+
+    return null;
+  };
+
+  // Reload settings from central server database
+  const reloadSettings = async (): Promise<HomepageSettings | null> => {
+    const clean = await fetchSettingsData();
+    if (clean) {
+      setHomepageSettings(clean);
+      try {
+        localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(clean));
+      } catch {}
+      const icon = clean.artistProfileSquare || clean.artistProfileImage;
+      if (icon) {
+        updateWebsiteFavicon(icon);
+      }
+      return clean;
     }
     return null;
   };
@@ -534,29 +563,19 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
   // Load server-persisted homepage & artist profile settings on initial mount
   useEffect(() => {
     let isMounted = true;
-    fetch(`/api/settings?t=${Date.now()}`, {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (!isMounted) return;
-        if (data && data.success && data.settings) {
-          const clean = sanitizeSettings(data.settings);
-          setHomepageSettings(clean);
-          try {
-            localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(clean));
-          } catch (e) {
-            console.warn('LocalStorage sync warning:', e);
-          }
-          const icon = clean.artistProfileSquare || clean.artistProfileImage;
-          if (icon) {
-            updateWebsiteFavicon(icon);
-          }
+    fetchSettingsData()
+      .then((clean) => {
+        if (!isMounted || !clean) return;
+        setHomepageSettings(clean);
+        try {
+          localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(clean));
+        } catch (e) {
+          console.warn('LocalStorage sync warning:', e);
         }
-      })
-      .catch((err) => {
-        console.warn('Using local persistent storage for settings:', err);
+        const icon = clean.artistProfileSquare || clean.artistProfileImage;
+        if (icon) {
+          updateWebsiteFavicon(icon);
+        }
       })
       .finally(() => {
         if (isMounted) setSettingsLoading(false);
@@ -571,24 +590,13 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     updates: Partial<HomepageSettings>
   ): Promise<{ success: boolean; message?: string }> => {
     // 1. Prepare sanitized new state
+    const previousSettings = homepageSettings;
     const updated: HomepageSettings = sanitizeSettings({
       ...homepageSettings,
       ...updates,
     });
 
-    // 2. Optimistic local update
-    setHomepageSettings(updated);
-    try {
-      localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(updated));
-    } catch (err) {
-      console.warn('LocalStorage error while saving homepageSettings:', err);
-    }
-    const icon = updated.artistProfileSquare || updated.artistProfileImage;
-    if (icon) {
-      updateWebsiteFavicon(icon);
-    }
-
-    // 3. Central Server Persistence
+    // 2. Central Server Persistence
     try {
       const res = await fetch('/api/settings', {
         method: 'POST',
@@ -599,30 +607,49 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         body: JSON.stringify(updated),
       });
 
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        return {
+          success: false,
+          message:
+            'সার্ভার ডাটাবেজ সাড়া দেয়নি (HTML response received from host). সেন্ট্রাল ব্যাকএন্ড চালু আছে কিনা যাচাই করুন।',
+        };
+      }
+
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
-        if (data.settings) {
-          const confirmed = sanitizeSettings(data.settings);
-          setHomepageSettings(confirmed);
-          try {
-            localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(confirmed));
-          } catch {}
+        const confirmed = sanitizeSettings(data.settings || updated);
+        setHomepageSettings(confirmed);
+        try {
+          localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(confirmed));
+        } catch {}
+        const icon = confirmed.artistProfileSquare || confirmed.artistProfileImage;
+        if (icon) {
+          updateWebsiteFavicon(icon);
         }
+
+        // Instant cross-tab broadcast
+        try {
+          const bc = new BroadcastChannel('raselbabu_sync');
+          bc.postMessage({ type: 'SETTINGS_UPDATED', settings: confirmed });
+          bc.close();
+        } catch {}
+
         return {
           success: true,
-          message: data.message || 'Settings saved and persisted centrally to database.',
+          message: data.message || 'সেটিংস সফলভাবে সেন্ট্রাল ডাটাবেজে সংরক্ষিত হয়েছে এবং সব ভিজিটরের জন্য সক্রিয়!',
         };
       } else {
         return {
           success: false,
-          message: data.message || 'Server save returned unsuccessful status.',
+          message: data.message || `সার্ভার সেভ ব্যর্থ হয়েছে (HTTP ${res.status}).`,
         };
       }
     } catch (err: any) {
       console.error('Backend settings sync failed:', err);
       return {
         success: false,
-        message: err?.message || 'Network error syncing with server database.',
+        message: 'নেটওয়ার্ক ত্রুটি: সেন্ট্রাল সার্ভার বা ডাটাবেজের সাথে সংযোগ স্থাপন করা যায়নি (' + (err?.message || 'Network error') + ')',
       };
     }
   };
@@ -815,6 +842,13 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         },
         body: JSON.stringify({ videos: targetVideos }),
       });
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) {
+        return {
+          success: false,
+          message: 'সার্ভার সাড়া দেয়নি (Non-JSON host response). সেন্ট্রাল ব্যাকএন্ড সক্রিয় আছে কিনা নিশ্চিত করুন।',
+        };
+      }
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
         try {
@@ -829,101 +863,160 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       }
       return {
         success: false,
-        message: data.message || 'Failed to save videos to central storage.',
+        message: data.message || `ভিডিও সংরক্ষণ ব্যর্থ হয়েছে (HTTP ${res.status}).`,
       };
     } catch (err: any) {
       console.error('Failed to save videos to central server:', err);
       return {
         success: false,
-        message: err?.message || 'Network error saving videos.',
+        message: 'নেটওয়ার্ক ত্রুটি: ' + (err?.message || 'Network error saving videos'),
       };
     }
   };
 
-  const reloadPhotos = async () => {
+  const fetchPhotosData = async (): Promise<PhotoItem[] | null> => {
+    // Strategy 1: Check Express /api/photos
     try {
       const res = await fetch(`/api/photos?t=${Date.now()}`, {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
       });
-      const data = await res.json();
-      if (data && data.success && Array.isArray(data.photos) && data.photos.length > 0) {
-        const clean = data.photos.map(normalizePhotoItem);
-        setPhotos(clean);
-        try {
-          localStorage.setItem(PHOTOS_KEY, JSON.stringify(clean));
-        } catch {}
+      const ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.includes('application/json')) {
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.photos) && data.photos.length > 0) {
+          return data.photos.map(normalizePhotoItem);
+        }
       }
-    } catch (err) {
-      console.warn('Failed to reload photos:', err);
-    }
+    } catch {}
+
+    // Strategy 2: Check persistent static mirror /photos.json
+    try {
+      const res = await fetch(`/photos.json?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      });
+      const ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.includes('application/json')) {
+        const data = await res.json();
+        const arr = Array.isArray(data) ? data : data?.photos;
+        if (Array.isArray(arr) && arr.length > 0) {
+          return arr.map(normalizePhotoItem);
+        }
+      }
+    } catch {}
+
+    return null;
   };
 
-  const reloadVideos = async () => {
+  const fetchVideosData = async (): Promise<VideoItem[] | null> => {
+    // Strategy 1: Check Express /api/videos
     try {
       const res = await fetch(`/api/videos?t=${Date.now()}`, {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
       });
-      const data = await res.json();
-      if (data && data.success && Array.isArray(data.videos) && data.videos.length > 0) {
-        setVideos(data.videos);
-        try {
-          localStorage.setItem(VIDEOS_KEY, JSON.stringify(data.videos));
-        } catch {}
+      const ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.includes('application/json')) {
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.videos) && data.videos.length > 0) {
+          return data.videos;
+        }
       }
-    } catch (err) {
-      console.warn('Failed to reload videos:', err);
+    } catch {}
+
+    // Strategy 2: Check persistent static mirror /videos.json
+    try {
+      const res = await fetch(`/videos.json?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      });
+      const ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.includes('application/json')) {
+        const data = await res.json();
+        const arr = Array.isArray(data) ? data : data?.videos;
+        if (Array.isArray(arr) && arr.length > 0) {
+          return arr;
+        }
+      }
+    } catch {}
+
+    return null;
+  };
+
+  const reloadPhotos = async () => {
+    const loaded = await fetchPhotosData();
+    if (loaded && loaded.length > 0) {
+      setPhotos(loaded);
+      try {
+        localStorage.setItem(PHOTOS_KEY, JSON.stringify(loaded));
+      } catch {}
     }
   };
 
-  // Central Server Synchronization for Photos & Videos (Live Cross-Device Sync)
+  const reloadVideos = async () => {
+    const loaded = await fetchVideosData();
+    if (loaded && loaded.length > 0) {
+      setVideos(loaded);
+      try {
+        localStorage.setItem(VIDEOS_KEY, JSON.stringify(loaded));
+      } catch {}
+    }
+  };
+
+  // Central Server Synchronization for Photos, Videos & Settings (Live Cross-Device Sync)
   useEffect(() => {
     let isMounted = true;
     setPhotosLoading(true);
     setVideosLoading(true);
 
-    const fetchCentralData = () => {
+    const fetchCentralData = async () => {
       // 1. Photos
-      fetch(`/api/photos?t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (!isMounted) return;
-          if (data && data.success && Array.isArray(data.photos) && data.photos.length > 0) {
-            const clean = data.photos.map(normalizePhotoItem);
-            setPhotos(clean);
-            try {
-              localStorage.setItem(PHOTOS_KEY, JSON.stringify(clean));
-            } catch {}
-          }
-        })
-        .catch((err) => console.warn('Photos central fetch warning:', err))
-        .finally(() => {
-          if (isMounted) setPhotosLoading(false);
-        });
+      try {
+        const loadedPhotos = await fetchPhotosData();
+        if (loadedPhotos && isMounted && loadedPhotos.length > 0) {
+          setPhotos(loadedPhotos);
+          try {
+            localStorage.setItem(PHOTOS_KEY, JSON.stringify(loadedPhotos));
+          } catch {}
+        }
+      } catch (err) {
+        console.warn('Photos central fetch warning:', err);
+      } finally {
+        if (isMounted) setPhotosLoading(false);
+      }
 
       // 2. Videos
-      fetch(`/api/videos?t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (!isMounted) return;
-          if (data && data.success && Array.isArray(data.videos) && data.videos.length > 0) {
-            setVideos(data.videos);
-            try {
-              localStorage.setItem(VIDEOS_KEY, JSON.stringify(data.videos));
-            } catch {}
+      try {
+        const loadedVideos = await fetchVideosData();
+        if (loadedVideos && isMounted && loadedVideos.length > 0) {
+          setVideos(loadedVideos);
+          try {
+            localStorage.setItem(VIDEOS_KEY, JSON.stringify(loadedVideos));
+          } catch {}
+        }
+      } catch (err) {
+        console.warn('Videos central fetch warning:', err);
+      } finally {
+        if (isMounted) setVideosLoading(false);
+      }
+
+      // 3. Settings (re-sync on poll / focus)
+      try {
+        const cleanSettings = await fetchSettingsData();
+        if (cleanSettings && isMounted) {
+          setHomepageSettings(cleanSettings);
+          try {
+            localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(cleanSettings));
+          } catch {}
+          const icon = cleanSettings.artistProfileSquare || cleanSettings.artistProfileImage;
+          if (icon) {
+            updateWebsiteFavicon(icon);
           }
-        })
-        .catch((err) => console.warn('Videos central fetch warning:', err))
-        .finally(() => {
-          if (isMounted) setVideosLoading(false);
-        });
+        }
+      } catch (err) {
+        console.warn('Settings central fetch warning:', err);
+      }
     };
 
     fetchCentralData();
@@ -952,6 +1045,16 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
           try {
             localStorage.setItem(VIDEOS_KEY, JSON.stringify(event.data.videos));
           } catch {}
+        } else if (event.data?.type === 'SETTINGS_UPDATED' && event.data.settings) {
+          const clean = sanitizeSettings(event.data.settings);
+          setHomepageSettings(clean);
+          try {
+            localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(clean));
+          } catch {}
+          const icon = clean.artistProfileSquare || clean.artistProfileImage;
+          if (icon) {
+            updateWebsiteFavicon(icon);
+          }
         }
       };
     } catch {}

@@ -1,11 +1,21 @@
 import React from 'react';
 import { Youtube, Facebook, Instagram, Music, MessageCircle, ExternalLink, ShieldCheck } from 'lucide-react';
+import { useData } from '../../context/DataContext';
 
 interface FooterProps {
   onNavigate: (path: string) => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+  const { homepageSettings } = useData();
+
+  const youtubeUrl = homepageSettings.socialYoutube || 'https://www.youtube.com/@RaselBabuOfficial';
+  const facebookUrl = homepageSettings.socialFacebook || 'https://www.facebook.com/RaselBabuOfficial';
+  const instagramUrl = homepageSettings.socialInstagram || 'https://www.instagram.com/RaselBabuOfficial';
+  const spotifyUrl = homepageSettings.socialSpotify || 'https://open.spotify.com/artist/RaselBabu';
+  const copyrightText = homepageSettings.footerCopyright || '© 2026 Rasel Babu Official Artist Website. All Rights Reserved.';
+  const taglineText = homepageSettings.footerTagline || 'Official artist website for Bangladeshi vocalist, composer, and live stage performer Rasel Babu. Connecting audiences worldwide through the soulful depth of Bengali melody and modern acoustic soundscapes.';
+
   return (
     <footer className="w-full bg-[#050507] border-t border-zinc-800/80 pt-16 pb-28 text-zinc-400 text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,11 +29,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <span className="w-2 h-2 rounded-full bg-amber-400" />
             </div>
             <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
-              Official artist website for Bangladeshi vocalist, composer, and live stage performer Rasel Babu. Connecting audiences worldwide through the soulful depth of Bengali melody and modern acoustic soundscapes.
+              {taglineText}
             </p>
             <div className="flex items-center gap-3 pt-2">
               <a
-                href="https://www.youtube.com/@RaselBabuOfficial"
+                href={youtubeUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-red-400 hover:border-red-400/40 transition-colors"
@@ -33,7 +43,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <Youtube className="w-4 h-4" />
               </a>
               <a
-                href="https://www.facebook.com/RaselBabuOfficial"
+                href={facebookUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-blue-400 hover:border-blue-400/40 transition-colors"
@@ -43,7 +53,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <Facebook className="w-4 h-4" />
               </a>
               <a
-                href="https://www.instagram.com/RaselBabuOfficial"
+                href={instagramUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-pink-400 hover:border-pink-400/40 transition-colors"
@@ -53,7 +63,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <Instagram className="w-4 h-4" />
               </a>
               <a
-                href="https://open.spotify.com/artist/RaselBabu"
+                href={spotifyUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-emerald-400 hover:border-emerald-400/40 transition-colors"
@@ -185,7 +195,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-400">
-          <p>© 2026 Rasel Babu Official Artist Website. All Rights Reserved.</p>
+          <p>{copyrightText}</p>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5 text-zinc-400">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />

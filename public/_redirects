@@ -1,1 +1,5 @@
-/*    /index.html   200
+/settings.json    /settings.json    200
+/photos.json      /photos.json      200
+/videos.json      /videos.json      200
+/uploads/*        /uploads/:splat   200
+/*                /index.html       200

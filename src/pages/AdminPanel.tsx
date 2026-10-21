@@ -528,8 +528,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
       // 2. Exact 1:1 square crop for favicon and avatars
       const squareCrop = await createSquareCrop(file, 256);
 
-      const profileUrl = compressedProfile || squareCrop;
-      const squareUrl = squareCrop || compressedProfile;
+      let profileUrl = compressedProfile || squareCrop;
+      let squareUrl = squareCrop || compressedProfile;
+
+      // Attempt to save to persistent server disk if /api/upload is available
+      try {
+        const upRes = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: profileUrl, name: 'profile_photo' }),
+        });
+        const upData = await upRes.json().catch(() => ({}));
+        if (upRes.ok && upData?.success && upData.url) {
+          profileUrl = upData.url;
+        }
+      } catch {}
+
+      try {
+        const sqRes = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: squareUrl, name: 'favicon_square' }),
+        });
+        const sqData = await sqRes.json().catch(() => ({}));
+        if (sqRes.ok && sqData?.success && sqData.url) {
+          squareUrl = sqData.url;
+        }
+      } catch {}
 
       setHomeArtistProfileImage(profileUrl);
       setHomeArtistProfileSquare(squareUrl);
@@ -775,7 +800,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     setPhotoSaving(true);
 
     try {
-      await addPhoto({
+      const res = await addPhoto({
         title: newPhotoData.title,
         category: newPhotoData.category,
         imageUrl: newPhotoData.imageUrl,
@@ -786,18 +811,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
         tags: newPhotoData.tags.split(',').map((t) => t.trim()).filter(Boolean),
       });
 
-      setNewPhotoData({
-        title: '',
-        category: 'concert',
-        imageUrl: '',
-        caption: '',
-        location: '',
-        photographer: '',
-        tags: '',
-      });
-      setShowAddPhoto(false);
-      setPhotoNotice('✅ নতুন ফটো সফলভাবে গ্যালারিতে আপলোড ও সেন্ট্রাল ডাটাবেজে সংরক্ষিত হয়েছে! (Live centrally across all visitors)');
-      setTimeout(() => setPhotoNotice(null), 5000);
+      if (res && res.success) {
+        setNewPhotoData({
+          title: '',
+          category: 'concert',
+          imageUrl: '',
+          caption: '',
+          location: '',
+          photographer: '',
+          tags: '',
+        });
+        setShowAddPhoto(false);
+        setPhotoNotice('✅ নতুন ফটো সফলভাবে গ্যালারিতে আপলোড ও সেন্ট্রাল ডাটাবেজে সংরক্ষিত হয়েছে! (Live centrally across all visitors)');
+        setTimeout(() => setPhotoNotice(null), 5000);
+      } else {
+        setPhotoNotice(`❌ ফটো সংরক্ষণ ব্যর্থ হয়েছে: ${res?.message || 'Error saving photo to server'}`);
+      }
     } catch (err: any) {
       setPhotoNotice(`❌ ফটো সংরক্ষণ ত্রুটি: ${err.message || 'Error saving photo'}`);
     } finally {
@@ -818,15 +847,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     if (!editingPhotoItem) return;
     setPhotoSaving(true);
     try {
-      await updatePhoto(editingPhotoItem.id, {
+      const res = await updatePhoto(editingPhotoItem.id, {
         title: photoEditTitle,
         category: photoEditCategory,
         imageUrl: photoEditImageUrl,
         location: photoEditLocation,
       });
-      setEditingPhotoItem(null);
-      setPhotoNotice('✅ ফটো তথ্য সফলভাবে আপডেট হয়েছে এবং সব ভিজিটরের জন্য লাইভ হয়েছে!');
-      setTimeout(() => setPhotoNotice(null), 5000);
+      if (res && res.success) {
+        setEditingPhotoItem(null);
+        setPhotoNotice('✅ ফটো তথ্য সফলভাবে আপডেট হয়েছে এবং সব ভিজিটরের জন্য লাইভ হয়েছে!');
+        setTimeout(() => setPhotoNotice(null), 5000);
+      } else {
+        setPhotoNotice(`❌ ফটো এডিট সংরক্ষণ ব্যর্থ: ${res?.message || 'Error saving edit'}`);
+      }
     } catch (err: any) {
       setPhotoNotice(`❌ ফটো এডিট ত্রুটি: ${err.message}`);
     } finally {
@@ -887,7 +920,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     setVideoSaving(true);
 
     try {
-      await updateVideo(editingVideoItem.id, {
+      const res = await updateVideo(editingVideoItem.id, {
         title: videoEditTitle,
         youtubeId: extractedId,
         category: videoEditCategory,
@@ -895,9 +928,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
         thumbnailUrl: `https://img.youtube.com/vi/${extractedId}/hqdefault.jpg`,
       });
 
-      setVideoNotice(`✅ YouTube video "${videoEditTitle}" successfully updated & live centrally for all visitors!`);
-      setTimeout(() => setVideoNotice(null), 5000);
-      setEditingVideoItem(null);
+      if (res && res.success) {
+        setVideoNotice(`✅ YouTube video "${videoEditTitle}" successfully updated & live centrally for all visitors!`);
+        setTimeout(() => setVideoNotice(null), 5000);
+        setEditingVideoItem(null);
+      } else {
+        setVideoNotice(`❌ ভিডিও আপডেট সংরক্ষণ ব্যর্থ: ${res?.message || 'Error updating video'}`);
+      }
     } catch (err: any) {
       setVideoNotice(`❌ ভিডিও আপডেট ত্রুটি: ${err.message}`);
     } finally {
@@ -912,7 +949,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     setVideoSaving(true);
 
     try {
-      await addVideo({
+      const res = await addVideo({
         title: newVideoTitle,
         youtubeId: extractedId,
         category: newVideoCategory,
@@ -923,12 +960,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
         views: '12K',
       });
 
-      setShowAddVideoModal(false);
-      setNewVideoTitle('');
-      setNewVideoUrl('');
-      setNewVideoDesc('');
-      setVideoNotice('✅ নতুন YouTube ভিডিও সফলভাবে সেন্ট্রাল ডাটাবেজে যুক্ত ও সবার জন্য লাইভ হয়েছে!');
-      setTimeout(() => setVideoNotice(null), 5000);
+      if (res && res.success) {
+        setShowAddVideoModal(false);
+        setNewVideoTitle('');
+        setNewVideoUrl('');
+        setNewVideoDesc('');
+        setVideoNotice('✅ নতুন YouTube ভিডিও সফলভাবে সেন্ট্রাল ডাটাবেজে যুক্ত ও সবার জন্য লাইভ হয়েছে!');
+        setTimeout(() => setVideoNotice(null), 5000);
+      } else {
+        setVideoNotice(`❌ ভিডিও যুক্ত করা ব্যর্থ: ${res?.message || 'Error saving video'}`);
+      }
     } catch (err: any) {
       setVideoNotice(`❌ ভিডিও যোগ করার ত্রুটি: ${err.message}`);
     } finally {
@@ -2367,9 +2408,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                                 itemName: p.title,
                                 message: 'আপনি কি নিশ্চিত যে গ্যালারি থেকে এই ফটোটি স্থায়ীভাবে ডিলিট করতে চান?',
                                 onConfirm: async () => {
-                                  await deletePhoto(p.id);
-                                  setPhotoNotice(`✅ Photo "${p.title}" deleted and updated centrally for all visitors.`);
-                                  setTimeout(() => setPhotoNotice(null), 4000);
+                                  const res = await deletePhoto(p.id);
+                                  if (res && res.success) {
+                                    setPhotoNotice(`✅ Photo "${p.title}" deleted and updated centrally for all visitors.`);
+                                    setTimeout(() => setPhotoNotice(null), 4000);
+                                  } else {
+                                    setPhotoNotice(`❌ ফটো ডিলিট ব্যর্থ হয়েছে: ${res?.message || 'Error deleting photo'}`);
+                                  }
                                 },
                               });
                             }}
@@ -2667,9 +2712,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                                     itemName: vid.title,
                                     message: 'আপনি কি নিশ্চিত যে ভিডিও তালিকা থেকে এই ভিডিওটি ডিলিট করতে চান?',
                                     onConfirm: async () => {
-                                      await deleteVideo(vid.id);
-                                      setVideoNotice(`✅ Video "${vid.title}" deleted and removed centrally for all visitors.`);
-                                      setTimeout(() => setVideoNotice(null), 4000);
+                                      const res = await deleteVideo(vid.id);
+                                      if (res && res.success) {
+                                        setVideoNotice(`✅ Video "${vid.title}" deleted and removed centrally for all visitors.`);
+                                        setTimeout(() => setVideoNotice(null), 4000);
+                                      } else {
+                                        setVideoNotice(`❌ ভিডিও ডিলিট ব্যর্থ হয়েছে: ${res?.message || 'Error deleting video'}`);
+                                      }
                                     },
                                   });
                                 }}
@@ -3306,6 +3355,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                   <div className="p-4 rounded-xl bg-emerald-950/70 border border-emerald-500/60 text-emerald-200 text-xs sm:text-sm flex items-center gap-2.5 shadow-xl animate-fade-in">
                     <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
                     <span className="font-medium">{profilePhotoSaveNotice}</span>
+                  </div>
+                )}
+
+                {saveErrorMessage && (
+                  <div className="p-4 rounded-xl bg-rose-950/70 border border-rose-500/60 text-rose-200 text-xs sm:text-sm flex items-center gap-2.5 shadow-xl animate-fade-in">
+                    <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+                    <span className="font-medium">{saveErrorMessage}</span>
                   </div>
                 )}
 

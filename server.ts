@@ -839,6 +839,64 @@ app.post('/api/admin/users/:id/points', requireAdmin, (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// Image Uploads API (Saves uploaded images to persistent disk storage)
+// ---------------------------------------------------------------------------
+app.use('/uploads', express.static(path.resolve('public', 'uploads')));
+
+app.post('/api/upload', (req, res) => {
+  try {
+    const { image, name } = req.body;
+    if (!image || typeof image !== 'string') {
+      res.status(400).json({ success: false, message: 'No image data provided' });
+      return;
+    }
+
+    if (image.startsWith('http://') || image.startsWith('https://') || image.startsWith('/')) {
+      res.json({ success: true, url: image });
+      return;
+    }
+
+    const matches = image.match(/^data:image\/([a-zA-Z0-9-+]+);base64,(.+)$/);
+    let ext = 'jpg';
+    let buffer: Buffer;
+
+    if (matches && matches.length === 3) {
+      ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+      buffer = Buffer.from(matches[2], 'base64');
+    } else {
+      buffer = Buffer.from(image, 'base64');
+    }
+
+    const safeName = (name || 'img')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 30);
+    const filename = `${safeName}_${Date.now()}.${ext}`;
+
+    const uploadsDir = path.resolve('public', 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    fs.writeFileSync(path.join(uploadsDir, filename), buffer);
+
+    try {
+      const distUploads = path.resolve('dist', 'uploads');
+      if (fs.existsSync(path.resolve('dist'))) {
+        if (!fs.existsSync(distUploads)) {
+          fs.mkdirSync(distUploads, { recursive: true });
+        }
+        fs.writeFileSync(path.join(distUploads, filename), buffer);
+      }
+    } catch {}
+
+    const fileUrl = `/uploads/${filename}`;
+    res.json({ success: true, url: fileUrl });
+  } catch (err: any) {
+    console.error('Image upload failed:', err);
+    res.status(500).json({ success: false, message: err?.message || 'Failed to save image' });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Settings Persistence API (Dual-layer persistence for Admin Website Settings)
 // ---------------------------------------------------------------------------
 app.get('/api/settings', (_req, res) => {
