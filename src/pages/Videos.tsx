@@ -49,14 +49,14 @@ export const Videos: React.FC = () => {
     setEditDescription(video.description);
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingVideo) return;
 
     const extractedId = extractYouTubeId(editUrlOrId);
     if (!extractedId) return;
 
-    updateVideo(editingVideo.id, {
+    await updateVideo(editingVideo.id, {
       title: editTitle,
       youtubeId: extractedId,
       category: editCategory,
@@ -70,12 +70,12 @@ export const Videos: React.FC = () => {
     setEditingVideo(null);
   };
 
-  const handleCreateVideo = (e: React.FormEvent) => {
+  const handleCreateVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     const extractedId = extractYouTubeId(newUrlOrId);
     if (!extractedId || !newTitle) return;
 
-    addVideo({
+    await addVideo({
       title: newTitle,
       youtubeId: extractedId,
       category: newCategory,

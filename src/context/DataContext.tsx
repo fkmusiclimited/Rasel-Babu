@@ -45,13 +45,15 @@ interface ActiveTrackState {
 }
 
 interface DataContextType {
-  // Photos
+  // Photos (Centrally Persisted & Live Synced)
   photos: PhotoItem[];
-  addPhoto: (photo: Omit<PhotoItem, 'id' | 'views' | 'likes'>) => void;
-  updatePhoto: (id: string, updates: Partial<PhotoItem>) => void;
-  deletePhoto: (id: string) => void;
+  photosLoading: boolean;
+  addPhoto: (photo: Omit<PhotoItem, 'id' | 'views' | 'likes'>) => Promise<{ success: boolean; message?: string }>;
+  updatePhoto: (id: string, updates: Partial<PhotoItem>) => Promise<{ success: boolean; message?: string }>;
+  deletePhoto: (id: string) => Promise<{ success: boolean; message?: string }>;
   likePhoto: (id: string) => void;
   incrementPhotoViews: (id: string) => void;
+  reloadPhotos: () => Promise<void>;
 
   // Albums & Music
   albums: Album[];
@@ -66,11 +68,13 @@ interface DataContextType {
   seekPlayer: (progressPercent: number) => void;
   stopAudio: () => void;
 
-  // Videos
+  // Videos (Centrally Persisted & Live Synced)
   videos: VideoItem[];
-  addVideo: (video: Omit<VideoItem, 'id'>) => void;
-  updateVideo: (id: string, updated: Partial<VideoItem>) => void;
-  deleteVideo: (id: string) => void;
+  videosLoading: boolean;
+  addVideo: (video: Omit<VideoItem, 'id'>) => Promise<{ success: boolean; message?: string }>;
+  updateVideo: (id: string, updated: Partial<VideoItem>) => Promise<{ success: boolean; message?: string }>;
+  deleteVideo: (id: string) => Promise<{ success: boolean; message?: string }>;
+  reloadVideos: () => Promise<void>;
 
   // Products / Store
   products: Product[];
@@ -194,6 +198,45 @@ const INITIAL_POINT_TRANSACTIONS: PointTransaction[] = [
   },
 ];
 
+const normalizeImagePath = (url?: string): string => {
+  if (!url) return '';
+  if (url.startsWith('/src/assets/images/')) {
+    return url.replace('/src/assets/images/', '/assets/images/');
+  }
+  return url;
+};
+
+const normalizePhotoItem = (p: any): PhotoItem => {
+  if (!p || typeof p !== 'object') {
+    return {
+      id: `photo-${Date.now()}`,
+      title: 'Untitled Photo',
+      category: 'concert',
+      imageUrl: '',
+      caption: '',
+      date: new Date().toISOString().split('T')[0],
+      location: 'Dhaka, Bangladesh',
+      photographer: 'Official Media Team',
+      views: 0,
+      likes: 0,
+      tags: [],
+    };
+  }
+  return {
+    id: String(p.id || `photo-${Date.now()}`),
+    title: String(p.title || 'Untitled Photo'),
+    category: (p.category as PhotoItem['category']) || 'concert',
+    imageUrl: normalizeImagePath(p.imageUrl),
+    caption: String(p.caption || ''),
+    date: String(p.date || new Date().toISOString().split('T')[0]),
+    location: String(p.location || 'Dhaka, Bangladesh'),
+    photographer: String(p.photographer || 'Official Media Team'),
+    views: typeof p.views === 'number' ? p.views : 0,
+    likes: typeof p.likes === 'number' ? p.likes : 0,
+    tags: Array.isArray(p.tags) ? p.tags : [],
+  };
+};
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { users, addPointsToUser } = useAuth();
 
@@ -208,24 +251,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return INITIAL_POINT_TRANSACTIONS;
   });
 
-  // Photos
+  // Photos (Central Persistent Storage)
+  const [photosLoading, setPhotosLoading] = useState(false);
   const [photos, setPhotos] = useState<PhotoItem[]>(() => {
     try {
       const saved = localStorage.getItem(PHOTOS_KEY);
       if (saved) {
         const parsed: PhotoItem[] = JSON.parse(saved);
-        return parsed.map((p) => {
-          if (p.imageUrl?.startsWith('/src/assets/images/')) {
-            const match = INITIAL_PHOTOS.find((ip) => ip.id === p.id);
-            if (match) return { ...p, imageUrl: match.imageUrl };
-          }
-          return p;
-        });
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(normalizePhotoItem);
+        }
       }
     } catch (e) {
       console.error(e);
     }
-    return INITIAL_PHOTOS;
+    return INITIAL_PHOTOS.map(normalizePhotoItem);
   });
 
   // Albums
@@ -248,11 +288,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return INITIAL_ALBUMS;
   });
 
-  // Videos
+  // Videos (Central Persistent Storage)
+  const [videosLoading, setVideosLoading] = useState(false);
   const [videos, setVideos] = useState<VideoItem[]>(() => {
     try {
       const saved = localStorage.getItem(VIDEOS_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
     } catch (e) {
       console.error(e);
     }
@@ -430,13 +474,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return INITIAL_ANALYTICS;
   });
 
-const normalizeImagePath = (url?: string): string => {
-  if (!url) return '';
-  if (url.startsWith('/src/assets/images/')) {
-    return url.replace('/src/assets/images/', '/assets/images/');
-  }
-  return url;
-};
 
 const sanitizeSettings = (raw: any): HomepageSettings => {
   if (!raw || typeof raw !== 'object') return { ...INITIAL_HOMEPAGE_SETTINGS };
@@ -726,23 +763,257 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     setActivePlayer((prev) => ({ ...prev, isPlaying: false }));
   };
 
-  // Photo handlers
-  const addPhoto = (photo: Omit<PhotoItem, 'id' | 'views' | 'likes'>) => {
+  // ---------------------------------------------------------------------------
+  // Central Server Persistence & Synchronization for Photos & Videos
+  // ---------------------------------------------------------------------------
+  const persistPhotosToServer = async (
+    targetPhotos: PhotoItem[]
+  ): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const res = await fetch('/api/photos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        body: JSON.stringify({ photos: targetPhotos }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        try {
+          const bc = new BroadcastChannel('raselbabu_sync');
+          bc.postMessage({ type: 'PHOTOS_UPDATED', photos: targetPhotos });
+          bc.close();
+        } catch {}
+        return {
+          success: true,
+          message: data.message || 'Gallery photos successfully persisted centrally across all browsers and devices.',
+        };
+      }
+      return {
+        success: false,
+        message: data.message || 'Failed to save photos to central storage.',
+      };
+    } catch (err: any) {
+      console.error('Failed to save photos to central server:', err);
+      return {
+        success: false,
+        message: err?.message || 'Network error saving photos.',
+      };
+    }
+  };
+
+  const persistVideosToServer = async (
+    targetVideos: VideoItem[]
+  ): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const res = await fetch('/api/videos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        body: JSON.stringify({ videos: targetVideos }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        try {
+          const bc = new BroadcastChannel('raselbabu_sync');
+          bc.postMessage({ type: 'VIDEOS_UPDATED', videos: targetVideos });
+          bc.close();
+        } catch {}
+        return {
+          success: true,
+          message: data.message || 'YouTube videos catalog successfully persisted centrally across all devices.',
+        };
+      }
+      return {
+        success: false,
+        message: data.message || 'Failed to save videos to central storage.',
+      };
+    } catch (err: any) {
+      console.error('Failed to save videos to central server:', err);
+      return {
+        success: false,
+        message: err?.message || 'Network error saving videos.',
+      };
+    }
+  };
+
+  const reloadPhotos = async () => {
+    try {
+      const res = await fetch(`/api/photos?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      });
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.photos) && data.photos.length > 0) {
+        const clean = data.photos.map(normalizePhotoItem);
+        setPhotos(clean);
+        try {
+          localStorage.setItem(PHOTOS_KEY, JSON.stringify(clean));
+        } catch {}
+      }
+    } catch (err) {
+      console.warn('Failed to reload photos:', err);
+    }
+  };
+
+  const reloadVideos = async () => {
+    try {
+      const res = await fetch(`/api/videos?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      });
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.videos) && data.videos.length > 0) {
+        setVideos(data.videos);
+        try {
+          localStorage.setItem(VIDEOS_KEY, JSON.stringify(data.videos));
+        } catch {}
+      }
+    } catch (err) {
+      console.warn('Failed to reload videos:', err);
+    }
+  };
+
+  // Central Server Synchronization for Photos & Videos (Live Cross-Device Sync)
+  useEffect(() => {
+    let isMounted = true;
+    setPhotosLoading(true);
+    setVideosLoading(true);
+
+    const fetchCentralData = () => {
+      // 1. Photos
+      fetch(`/api/photos?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!isMounted) return;
+          if (data && data.success && Array.isArray(data.photos) && data.photos.length > 0) {
+            const clean = data.photos.map(normalizePhotoItem);
+            setPhotos(clean);
+            try {
+              localStorage.setItem(PHOTOS_KEY, JSON.stringify(clean));
+            } catch {}
+          }
+        })
+        .catch((err) => console.warn('Photos central fetch warning:', err))
+        .finally(() => {
+          if (isMounted) setPhotosLoading(false);
+        });
+
+      // 2. Videos
+      fetch(`/api/videos?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!isMounted) return;
+          if (data && data.success && Array.isArray(data.videos) && data.videos.length > 0) {
+            setVideos(data.videos);
+            try {
+              localStorage.setItem(VIDEOS_KEY, JSON.stringify(data.videos));
+            } catch {}
+          }
+        })
+        .catch((err) => console.warn('Videos central fetch warning:', err))
+        .finally(() => {
+          if (isMounted) setVideosLoading(false);
+        });
+    };
+
+    fetchCentralData();
+
+    // 5-second poll interval so all visitors and devices receive admin updates live immediately
+    const pollInterval = setInterval(fetchCentralData, 5000);
+
+    // Tab focus listener for instant refresh when visitor returns to tab
+    const handleFocus = () => fetchCentralData();
+    window.addEventListener('focus', handleFocus);
+
+    // BroadcastChannel for instant 0ms same-browser tab sync
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('raselbabu_sync');
+      bc.onmessage = (event) => {
+        if (!isMounted) return;
+        if (event.data?.type === 'PHOTOS_UPDATED' && Array.isArray(event.data.photos)) {
+          const clean = event.data.photos.map(normalizePhotoItem);
+          setPhotos(clean);
+          try {
+            localStorage.setItem(PHOTOS_KEY, JSON.stringify(clean));
+          } catch {}
+        } else if (event.data?.type === 'VIDEOS_UPDATED' && Array.isArray(event.data.videos)) {
+          setVideos(event.data.videos);
+          try {
+            localStorage.setItem(VIDEOS_KEY, JSON.stringify(event.data.videos));
+          } catch {}
+        }
+      };
+    } catch {}
+
+    return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      if (bc) {
+        try {
+          bc.close();
+        } catch {}
+      }
+    };
+  }, []);
+
+  // Photo handlers (with Central Persistence)
+  const addPhoto = async (photo: Omit<PhotoItem, 'id' | 'views' | 'likes'>): Promise<{ success: boolean; message?: string }> => {
     const newPhoto: PhotoItem = {
       ...photo,
+      imageUrl: normalizeImagePath(photo.imageUrl),
       id: `photo-${Date.now()}`,
       views: 0,
       likes: 0,
     };
-    setPhotos((prev) => [newPhoto, ...prev]);
+    const updated = [newPhoto, ...photos];
+    setPhotos(updated);
+    try {
+      localStorage.setItem(PHOTOS_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.warn(e);
+    }
+    return await persistPhotosToServer(updated);
   };
 
-  const updatePhoto = (id: string, updates: Partial<PhotoItem>) => {
-    setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  const updatePhoto = async (id: string, updates: Partial<PhotoItem>): Promise<{ success: boolean; message?: string }> => {
+    const updated = photos.map((p) => {
+      if (p.id !== id) return p;
+      return {
+        ...p,
+        ...updates,
+        imageUrl: updates.imageUrl ? normalizeImagePath(updates.imageUrl) : p.imageUrl,
+      };
+    });
+    setPhotos(updated);
+    try {
+      localStorage.setItem(PHOTOS_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.warn(e);
+    }
+    return await persistPhotosToServer(updated);
   };
 
-  const deletePhoto = (id: string) => {
-    setPhotos((prev) => prev.filter((p) => p.id !== id));
+  const deletePhoto = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    const updated = photos.filter((p) => p.id !== id);
+    setPhotos(updated);
+    try {
+      localStorage.setItem(PHOTOS_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.warn(e);
+    }
+    return await persistPhotosToServer(updated);
   };
 
   const likePhoto = (id: string) => {
@@ -767,18 +1038,39 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     setAlbums((prev) => prev.filter((a) => a.id !== id));
   };
 
-  // Video handlers
-  const addVideo = (video: Omit<VideoItem, 'id'>) => {
+  // Video handlers (with Central Persistence)
+  const addVideo = async (video: Omit<VideoItem, 'id'>): Promise<{ success: boolean; message?: string }> => {
     const newVideo: VideoItem = { ...video, id: `video-${Date.now()}` };
-    setVideos((prev) => [newVideo, ...prev]);
+    const updated = [newVideo, ...videos];
+    setVideos(updated);
+    try {
+      localStorage.setItem(VIDEOS_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.warn(e);
+    }
+    return await persistVideosToServer(updated);
   };
 
-  const updateVideo = (id: string, updated: Partial<VideoItem>) => {
-    setVideos((prev) => prev.map((v) => (v.id === id ? { ...v, ...updated } : v)));
+  const updateVideo = async (id: string, updatedFields: Partial<VideoItem>): Promise<{ success: boolean; message?: string }> => {
+    const updated = videos.map((v) => (v.id === id ? { ...v, ...updatedFields } : v));
+    setVideos(updated);
+    try {
+      localStorage.setItem(VIDEOS_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.warn(e);
+    }
+    return await persistVideosToServer(updated);
   };
 
-  const deleteVideo = (id: string) => {
-    setVideos((prev) => prev.filter((v) => v.id !== id));
+  const deleteVideo = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    const updated = videos.filter((v) => v.id !== id);
+    setVideos(updated);
+    try {
+      localStorage.setItem(VIDEOS_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.warn(e);
+    }
+    return await persistVideosToServer(updated);
   };
 
   // Products handlers
@@ -1087,11 +1379,13 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     <DataContext.Provider
       value={{
         photos,
+        photosLoading,
         addPhoto,
         updatePhoto,
         deletePhoto,
         likePhoto,
         incrementPhotoViews,
+        reloadPhotos,
         albums,
         addAlbum,
         deleteAlbum,
@@ -1102,9 +1396,11 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         seekPlayer,
         stopAudio,
         videos,
+        videosLoading,
         addVideo,
         updateVideo,
         deleteVideo,
+        reloadVideos,
         products,
         addProduct,
         updateProduct,

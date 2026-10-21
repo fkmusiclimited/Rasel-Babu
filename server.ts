@@ -14,6 +14,8 @@ const DATA_DIR = path.resolve('.data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const RESETS_FILE = path.join(DATA_DIR, 'resets.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+const PHOTOS_FILE = path.join(DATA_DIR, 'photos.json');
+const VIDEOS_FILE = path.join(DATA_DIR, 'videos.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -911,6 +913,140 @@ app.post('/api/settings', (req, res) => {
   } catch (err) {
     console.error('Failed to save settings file:', err);
     res.status(500).json({ success: false, message: 'Failed to write settings to central storage' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Photos Persistence API (Gallery Photos Central Storage)
+// ---------------------------------------------------------------------------
+app.get('/api/photos', (_req, res) => {
+  try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    if (fs.existsSync(PHOTOS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(PHOTOS_FILE, 'utf-8'));
+      res.json({ success: true, photos: data });
+      return;
+    }
+
+    const publicPhotos = path.resolve('public', 'photos.json');
+    if (fs.existsSync(publicPhotos)) {
+      const data = JSON.parse(fs.readFileSync(publicPhotos, 'utf-8'));
+      res.json({ success: true, photos: data });
+      return;
+    }
+  } catch (err) {
+    console.error('Failed to read photos file:', err);
+  }
+  res.json({ success: true, photos: null });
+});
+
+app.post('/api/photos', (req, res) => {
+  try {
+    const rawPhotos = Array.isArray(req.body) ? req.body : req.body.photos;
+    if (!Array.isArray(rawPhotos)) {
+      res.status(400).json({ success: false, message: 'Invalid photos array payload' });
+      return;
+    }
+
+    const serialized = JSON.stringify(rawPhotos, null, 2);
+
+    // 1. Write to server database storage (.data/photos.json)
+    fs.writeFileSync(PHOTOS_FILE, serialized, 'utf-8');
+
+    // 2. Mirror to public/photos.json for static bundle persistence
+    try {
+      const publicPath = path.resolve('public', 'photos.json');
+      fs.writeFileSync(publicPath, serialized, 'utf-8');
+    } catch (e) {
+      console.warn('Could not mirror to public/photos.json:', e);
+    }
+
+    // 3. Mirror to dist/photos.json if dist folder exists
+    try {
+      const distPath = path.resolve('dist', 'photos.json');
+      if (fs.existsSync(path.resolve('dist'))) {
+        fs.writeFileSync(distPath, serialized, 'utf-8');
+      }
+    } catch {}
+
+    res.json({
+      success: true,
+      message: 'Gallery photos successfully persisted centrally across all browsers and devices.',
+      photos: rawPhotos,
+    });
+  } catch (err) {
+    console.error('Failed to save photos file:', err);
+    res.status(500).json({ success: false, message: 'Failed to write photos to central storage' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Videos Persistence API (YouTube Videos Central Storage)
+// ---------------------------------------------------------------------------
+app.get('/api/videos', (_req, res) => {
+  try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    if (fs.existsSync(VIDEOS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(VIDEOS_FILE, 'utf-8'));
+      res.json({ success: true, videos: data });
+      return;
+    }
+
+    const publicVideos = path.resolve('public', 'videos.json');
+    if (fs.existsSync(publicVideos)) {
+      const data = JSON.parse(fs.readFileSync(publicVideos, 'utf-8'));
+      res.json({ success: true, videos: data });
+      return;
+    }
+  } catch (err) {
+    console.error('Failed to read videos file:', err);
+  }
+  res.json({ success: true, videos: null });
+});
+
+app.post('/api/videos', (req, res) => {
+  try {
+    const rawVideos = Array.isArray(req.body) ? req.body : req.body.videos;
+    if (!Array.isArray(rawVideos)) {
+      res.status(400).json({ success: false, message: 'Invalid videos array payload' });
+      return;
+    }
+
+    const serialized = JSON.stringify(rawVideos, null, 2);
+
+    // 1. Write to server database storage (.data/videos.json)
+    fs.writeFileSync(VIDEOS_FILE, serialized, 'utf-8');
+
+    // 2. Mirror to public/videos.json
+    try {
+      const publicPath = path.resolve('public', 'videos.json');
+      fs.writeFileSync(publicPath, serialized, 'utf-8');
+    } catch (e) {
+      console.warn('Could not mirror to public/videos.json:', e);
+    }
+
+    // 3. Mirror to dist/videos.json if dist folder exists
+    try {
+      const distPath = path.resolve('dist', 'videos.json');
+      if (fs.existsSync(path.resolve('dist'))) {
+        fs.writeFileSync(distPath, serialized, 'utf-8');
+      }
+    } catch {}
+
+    res.json({
+      success: true,
+      message: 'YouTube videos catalog successfully persisted centrally across all browsers and devices.',
+      videos: rawVideos,
+    });
+  } catch (err) {
+    console.error('Failed to save videos file:', err);
+    res.status(500).json({ success: false, message: 'Failed to write videos to central storage' });
   }
 });
 
