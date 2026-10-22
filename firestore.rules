@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Official Artist Website public collections
+    match /photos/{photoId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /videos/{videoId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /settings/{settingsId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

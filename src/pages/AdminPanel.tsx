@@ -54,6 +54,7 @@ import {
   Copy,
   Loader2,
   RefreshCw,
+  Cloud,
 } from 'lucide-react';
 import { UserRole, PhotoItem, NewsArticle, VideoItem, TourEvent, Product, OrderItem, HomepageSettings, DistributionInquiry, User } from '../types';
 import { extractYouTubeId } from './Videos';
@@ -75,6 +76,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     updatePhoto,
     deletePhoto,
     reloadPhotos,
+    syncAllPhotosToCloud,
     albums,
     deleteAlbum,
     videos,
@@ -87,6 +89,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     addProduct,
     updateProduct,
     deleteProduct,
+    syncAllProductsToCloud,
+    cloudConnected,
     openProductView,
     orders,
     updateOrderStatus,
@@ -867,6 +871,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     }
   };
 
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+
+  const handleBatchSyncPhotos = async () => {
+    setIsSyncingCloud(true);
+    try {
+      const res = await syncAllPhotosToCloud();
+      if (res && res.success) {
+        setPhotoNotice(`✅ ${res.message || 'সকল ছবি গুগল ক্লাউড ফায়ারবেসে সফলভাবে সিঙ্ক হয়েছে এবং সকল ব্রাউজার ও ডিভাইসে লাইভ প্রদর্শিত হচ্ছে!'}`);
+      } else {
+        setPhotoNotice(`❌ ক্লাউড সিঙ্ক ব্যর্থ হয়েছে: ${res?.message || 'Error syncing photos'}`);
+      }
+    } catch (err: any) {
+      setPhotoNotice(`❌ সিঙ্ক ত্রুটি: ${err?.message || 'Network error'}`);
+    } finally {
+      setIsSyncingCloud(false);
+      setTimeout(() => setPhotoNotice(null), 6000);
+    }
+  };
+
   const handleCreateNews = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNewsData.title || !newNewsData.content) return;
@@ -1016,7 +1039,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     setShowProductModal(true);
   };
 
-  const handleSaveProduct = (e: React.FormEvent) => {
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanTitle = productFormTitle.trim();
     if (!cleanTitle) {
@@ -1036,42 +1059,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
 
     const safeImageUrl = productFormImageUrl.trim() || TRADITIONAL_PUNJABI_IMAGE;
 
-    if (editingProductItem) {
-      updateProduct(editingProductItem.id, {
-        title: cleanTitle,
-        price: Number(productFormPrice) || 0,
-        offerPrice: numericOffer,
-        currency: productFormCurrency || 'BDT',
-        category: productFormCategory,
-        imageUrl: safeImageUrl,
-        additionalImages,
-        sizes: parsedSizes,
-        description: productFormDescription || '',
-        buyUrl: productFormBuyUrl || '',
-        badge: productFormBadge || '',
-        inStock: productFormInStock,
-      });
-      setShopNotice(`Product "${cleanTitle}" updated successfully!`);
-    } else {
-      addProduct({
-        title: cleanTitle,
-        price: Number(productFormPrice) || 0,
-        offerPrice: numericOffer,
-        currency: productFormCurrency || 'BDT',
-        category: productFormCategory,
-        imageUrl: safeImageUrl,
-        additionalImages,
-        sizes: parsedSizes,
-        description: productFormDescription || '',
-        buyUrl: productFormBuyUrl || '',
-        badge: productFormBadge || '',
-        inStock: productFormInStock,
-      });
-      setShopNotice(`New product "${cleanTitle}" added to store!`);
+    try {
+      if (editingProductItem) {
+        const res = await updateProduct(editingProductItem.id, {
+          title: cleanTitle,
+          price: Number(productFormPrice) || 0,
+          offerPrice: numericOffer,
+          currency: productFormCurrency || 'BDT',
+          category: productFormCategory,
+          imageUrl: safeImageUrl,
+          additionalImages,
+          sizes: parsedSizes,
+          description: productFormDescription || '',
+          buyUrl: productFormBuyUrl || '',
+          badge: productFormBadge || '',
+          inStock: productFormInStock,
+        });
+        if (res && !res.success) {
+          setShopNotice(`❌ প্রোডাক্ট আপডেট ব্যর্থ: ${res.message || 'Error saving to cloud'}`);
+          return;
+        }
+        setShopNotice(`✅ প্রোডাক্ট "${cleanTitle}" সফলভাবে আপডেট ও ক্লাউডে সংরক্ষিত হয়েছে!`);
+      } else {
+        const res = await addProduct({
+          title: cleanTitle,
+          price: Number(productFormPrice) || 0,
+          offerPrice: numericOffer,
+          currency: productFormCurrency || 'BDT',
+          category: productFormCategory,
+          imageUrl: safeImageUrl,
+          additionalImages,
+          sizes: parsedSizes,
+          description: productFormDescription || '',
+          buyUrl: productFormBuyUrl || '',
+          badge: productFormBadge || '',
+          inStock: productFormInStock,
+        });
+        if (res && !res.success) {
+          setShopNotice(`❌ প্রোডাক্ট সংরক্ষণ ব্যর্থ: ${res.message || 'Error saving to cloud'}`);
+          return;
+        }
+        setShopNotice(`✅ নতুন প্রোডাক্ট "${cleanTitle}" সফলভাবে স্টোরে যোগ ও ক্লাউডে সংরক্ষিত হয়েছে!`);
+      }
+      setTimeout(() => setShopNotice(null), 5000);
+      setShowProductModal(false);
+    } catch (err: any) {
+      setShopNotice(`❌ প্রোডাক্ট সংরক্ষণ ত্রুটি: ${err?.message || 'Error saving product'}`);
     }
-
-    setTimeout(() => setShopNotice(null), 3500);
-    setShowProductModal(false);
   };
 
   return (
@@ -2109,6 +2143,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleBatchSyncPhotos}
+                      disabled={isSyncingCloud}
+                      className="px-3.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-blue-500/40"
+                      title="Push current gallery photos to Google Cloud Firestore so all visitors and devices see them immediately"
+                    >
+                      <Cloud className={`w-3.5 h-3.5 text-blue-400 ${isSyncingCloud ? 'animate-spin' : ''}`} />
+                      <span>{isSyncingCloud ? 'ক্লাউডে সিঙ্ক হচ্ছে...' : 'Push to Cloud (সব ছবি ক্লাউডে সিঙ্ক)'}</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => reloadPhotos()}

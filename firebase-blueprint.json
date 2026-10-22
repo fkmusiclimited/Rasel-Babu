@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "Photo": {
+      "title": "Photo",
+      "description": "Artist gallery photo item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique photo identifier" },
+        "title": { "type": "string", "description": "Photo title" },
+        "category": { "type": "string", "description": "Category such as concert, studio, etc." },
+        "imageUrl": { "type": "string", "description": "Image URL or data URI" },
+        "caption": { "type": "string", "description": "Optional caption or description" },
+        "date": { "type": "string", "description": "Date ISO string" },
+        "location": { "type": "string", "description": "Location of photo shoot" },
+        "photographer": { "type": "string", "description": "Photographer credit" },
+        "views": { "type": "number", "description": "View count" },
+        "likes": { "type": "number", "description": "Like count" },
+        "tags": { "type": "array", "description": "Keywords and tags" }
+      },
+      "required": ["id", "title", "category", "imageUrl"]
+    },
+    "Video": {
+      "title": "Video",
+      "description": "Official YouTube music video or concert recording",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique video ID" },
+        "title": { "type": "string", "description": "Video title" },
+        "youtubeId": { "type": "string", "description": "YouTube video ID" },
+        "category": { "type": "string", "description": "Music Video, Live Concert, etc." },
+        "description": { "type": "string", "description": "Video description" },
+        "thumbnailUrl": { "type": "string", "description": "Thumbnail image URL" },
+        "duration": { "type": "string", "description": "Playback duration" },
+        "releaseDate": { "type": "string", "description": "Release date string" },
+        "views": { "type": "string", "description": "Formatted view count" }
+      },
+      "required": ["id", "title", "youtubeId"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Exclusive fan merchandise and apparel item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique product ID" },
+        "title": { "type": "string", "description": "Product title" },
+        "price": { "type": "number", "description": "Regular price in BDT" },
+        "offerPrice": { "type": "number", "description": "Discounted price in BDT" },
+        "currency": { "type": "string", "description": "Currency code" },
+        "category": { "type": "string", "description": "Product category" },
+        "imageUrl": { "type": "string", "description": "Main product image" }
+      },
+      "required": ["id", "title", "price", "category", "imageUrl"]
+    },
+    "HomepageSettings": {
+      "title": "HomepageSettings",
+      "description": "Global website configuration, profile image, and content",
+      "type": "object",
+      "properties": {
+        "artistProfileImage": { "type": "string", "description": "Main artist profile image" },
+        "artistProfileSquare": { "type": "string", "description": "1:1 square crop for favicon and avatar" },
+        "heroTitle": { "type": "string", "description": "Hero section title" },
+        "heroSubtitle": { "type": "string", "description": "Hero section subtitle" }
+      }
+    }
+  },
+  "firestore": {
+    "/photos/{photoId}": {
+      "schema": "Photo",
+      "description": "Public gallery photos collection"
+    },
+    "/videos/{videoId}": {
+      "schema": "Video",
+      "description": "Public YouTube videos collection"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Public merchandise shop products collection"
+    },
+    "/settings/{settingsId}": {
+      "schema": "HomepageSettings",
+      "description": "Global artist portal configuration settings"
+    }
+  }
+}

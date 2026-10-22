@@ -35,6 +35,27 @@ import {
 
 import { audioSynth } from '../utils/audioSynth';
 import { updateWebsiteFavicon } from '../utils/imageCompress';
+import {
+  subscribeToHomepageSettings,
+  saveHomepageSettingsToFirestore,
+  fetchHomepageSettingsFromFirestore,
+  subscribeToPhotos,
+  fetchPhotosFromFirestore,
+  savePhotoToFirestore,
+  updatePhotoInFirestore,
+  deletePhotoFromFirestore,
+  batchSyncPhotosToFirestore,
+  subscribeToProducts,
+  saveProductToFirestore,
+  updateProductInFirestore,
+  deleteProductFromFirestore,
+  batchSyncProductsToFirestore,
+  subscribeToVideos,
+  fetchVideosFromFirestore,
+  saveVideoToFirestore,
+  updateVideoInFirestore,
+  deleteVideoFromFirestore,
+} from '../firebase/firestoreService';
 
 interface ActiveTrackState {
   track: Track | null;
@@ -45,7 +66,7 @@ interface ActiveTrackState {
 }
 
 interface DataContextType {
-  // Photos (Centrally Persisted & Live Synced)
+  // Photos (Centrally Persisted in Cloud & Live Synced across all devices)
   photos: PhotoItem[];
   photosLoading: boolean;
   addPhoto: (photo: Omit<PhotoItem, 'id' | 'views' | 'likes'>) => Promise<{ success: boolean; message?: string }>;
@@ -54,6 +75,7 @@ interface DataContextType {
   likePhoto: (id: string) => void;
   incrementPhotoViews: (id: string) => void;
   reloadPhotos: () => Promise<void>;
+  syncAllPhotosToCloud: () => Promise<{ success: boolean; message?: string }>;
 
   // Albums & Music
   albums: Album[];
@@ -76,14 +98,16 @@ interface DataContextType {
   deleteVideo: (id: string) => Promise<{ success: boolean; message?: string }>;
   reloadVideos: () => Promise<void>;
 
-  // Products / Store
+  // Products / Store (Centrally Persisted in Cloud & Live Synced)
   products: Product[];
-  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => void;
-  updateProduct: (id: string, updated: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
+  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<{ success: boolean; message?: string }>;
+  updateProduct: (id: string, updated: Partial<Product>) => Promise<{ success: boolean; message?: string }>;
+  deleteProduct: (id: string) => Promise<{ success: boolean; message?: string }>;
   viewingProduct: Product | null;
   openProductView: (productOrId: Product | string) => void;
   closeProductView: () => void;
+  syncAllProductsToCloud: () => Promise<{ success: boolean; message?: string }>;
+  cloudConnected: boolean;
 
   // Store Orders
   orders: OrderItem[];
@@ -505,9 +529,17 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
 
   const [settingsLoading, setSettingsLoading] = useState(true);
 
-  // Helper to fetch settings from API or static mirror
+  // Helper to fetch settings from Firestore, API or static mirror
   const fetchSettingsData = async (): Promise<HomepageSettings | null> => {
-    // Strategy 1: Check full-stack Express API
+    // Strategy 1: Direct Cloud Firestore fetch (Works on all hosts, netlify, mobile & desktop)
+    try {
+      const cloudSettings = await fetchHomepageSettingsFromFirestore();
+      if (cloudSettings) {
+        return sanitizeSettings(cloudSettings);
+      }
+    } catch {}
+
+    // Strategy 2: Check full-stack Express API if running
     try {
       const res = await fetch(`/api/settings?t=${Date.now()}`, {
         cache: 'no-store',
@@ -522,7 +554,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       }
     } catch {}
 
-    // Strategy 2: Check persistent static mirror (/settings.json on static hosts like Netlify/Vercel)
+    // Strategy 3: Check persistent static mirror (/settings.json on static hosts)
     try {
       const res = await fetch(`/settings.json?t=${Date.now()}`, {
         cache: 'no-store',
@@ -543,7 +575,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     return null;
   };
 
-  // Reload settings from central server database
+  // Reload settings from central server / cloud database
   const reloadSettings = async (): Promise<HomepageSettings | null> => {
     const clean = await fetchSettingsData();
     if (clean) {
@@ -560,9 +592,11 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     return null;
   };
 
-  // Load server-persisted homepage & artist profile settings on initial mount
+  // Real-Time Cloud Firestore Listener for Homepage Settings & Profile Photo
   useEffect(() => {
     let isMounted = true;
+
+    // Initial fetch
     fetchSettingsData()
       .then((clean) => {
         if (!isMounted || !clean) return;
@@ -581,8 +615,28 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         if (isMounted) setSettingsLoading(false);
       });
 
+    // Real-Time Firestore Subscription
+    const unsubscribe = subscribeToHomepageSettings(
+      (cloudSettings) => {
+        if (!isMounted) return;
+        const clean = sanitizeSettings(cloudSettings);
+        setHomepageSettings(clean);
+        try {
+          localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(clean));
+        } catch {}
+        const icon = clean.artistProfileSquare || clean.artistProfileImage;
+        if (icon) {
+          updateWebsiteFavicon(icon);
+        }
+      },
+      (err) => {
+        console.warn('Firestore settings listener error:', err);
+      }
+    );
+
     return () => {
       isMounted = false;
+      unsubscribe();
     };
   }, []);
 
@@ -596,9 +650,18 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       ...updates,
     });
 
-    // 2. Central Server Persistence
+    // 2. Central Cloud Firestore Persistence
+    const cloudRes = await saveHomepageSettingsToFirestore(updated);
+    if (!cloudRes.success) {
+      return {
+        success: false,
+        message: cloudRes.message || 'ক্লাউড ডাটাবেজে সংরক্ষণ ব্যর্থ হয়েছে। অনুগ্রহ করে ইন্টারনেট ও ফায়ারবেস সংযোগ পরীক্ষা করুন।',
+      };
+    }
+
+    // 3. Optional local express backend backup if available
     try {
-      const res = await fetch('/api/settings', {
+      await fetch('/api/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -606,52 +669,28 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         },
         body: JSON.stringify(updated),
       });
+    } catch {}
 
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
-        return {
-          success: false,
-          message:
-            'সার্ভার ডাটাবেজ সাড়া দেয়নি (HTML response received from host). সেন্ট্রাল ব্যাকএন্ড চালু আছে কিনা যাচাই করুন।',
-        };
-      }
-
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data.success) {
-        const confirmed = sanitizeSettings(data.settings || updated);
-        setHomepageSettings(confirmed);
-        try {
-          localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(confirmed));
-        } catch {}
-        const icon = confirmed.artistProfileSquare || confirmed.artistProfileImage;
-        if (icon) {
-          updateWebsiteFavicon(icon);
-        }
-
-        // Instant cross-tab broadcast
-        try {
-          const bc = new BroadcastChannel('raselbabu_sync');
-          bc.postMessage({ type: 'SETTINGS_UPDATED', settings: confirmed });
-          bc.close();
-        } catch {}
-
-        return {
-          success: true,
-          message: data.message || 'সেটিংস সফলভাবে সেন্ট্রাল ডাটাবেজে সংরক্ষিত হয়েছে এবং সব ভিজিটরের জন্য সক্রিয়!',
-        };
-      } else {
-        return {
-          success: false,
-          message: data.message || `সার্ভার সেভ ব্যর্থ হয়েছে (HTTP ${res.status}).`,
-        };
-      }
-    } catch (err: any) {
-      console.error('Backend settings sync failed:', err);
-      return {
-        success: false,
-        message: 'নেটওয়ার্ক ত্রুটি: সেন্ট্রাল সার্ভার বা ডাটাবেজের সাথে সংযোগ স্থাপন করা যায়নি (' + (err?.message || 'Network error') + ')',
-      };
+    // 4. Update local state, favicon and cross-tab BroadcastChannel
+    setHomepageSettings(updated);
+    try {
+      localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(updated));
+    } catch {}
+    const icon = updated.artistProfileSquare || updated.artistProfileImage;
+    if (icon) {
+      updateWebsiteFavicon(icon);
     }
+
+    try {
+      const bc = new BroadcastChannel('raselbabu_sync');
+      bc.postMessage({ type: 'SETTINGS_UPDATED', settings: updated });
+      bc.close();
+    } catch {}
+
+    return {
+      success: true,
+      message: 'রাসেল বাবুর প্রোফাইল ছবি ও সেটিংস সফলভাবে ক্লাউড ডাটাবেজে সংরক্ষিত হয়েছে এবং সকল ভিজিটর ও ডিভাইসের জন্য লাইভ আপডেট হয়েছে!',
+    };
   };
 
   // Distribution Inquiries (Website Artist Submissions)
@@ -875,7 +914,15 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
   };
 
   const fetchPhotosData = async (): Promise<PhotoItem[] | null> => {
-    // Strategy 1: Check Express /api/photos
+    // Strategy 1: Direct Cloud Firestore fetch
+    try {
+      const cloudPhotos = await fetchPhotosFromFirestore();
+      if (cloudPhotos && cloudPhotos.length > 0) {
+        return cloudPhotos.map(normalizePhotoItem);
+      }
+    } catch {}
+
+    // Strategy 2: Check Express /api/photos
     try {
       const res = await fetch(`/api/photos?t=${Date.now()}`, {
         cache: 'no-store',
@@ -890,7 +937,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       }
     } catch {}
 
-    // Strategy 2: Check persistent static mirror /photos.json
+    // Strategy 3: Check persistent static mirror /photos.json
     try {
       const res = await fetch(`/photos.json?t=${Date.now()}`, {
         cache: 'no-store',
@@ -910,7 +957,15 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
   };
 
   const fetchVideosData = async (): Promise<VideoItem[] | null> => {
-    // Strategy 1: Check Express /api/videos
+    // Strategy 1: Direct Cloud Firestore fetch
+    try {
+      const cloudVideos = await fetchVideosFromFirestore();
+      if (cloudVideos && cloudVideos.length > 0) {
+        return cloudVideos;
+      }
+    } catch {}
+
+    // Strategy 2: Check Express /api/videos
     try {
       const res = await fetch(`/api/videos?t=${Date.now()}`, {
         cache: 'no-store',
@@ -925,7 +980,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       }
     } catch {}
 
-    // Strategy 2: Check persistent static mirror /videos.json
+    // Strategy 3: Check persistent static mirror /videos.json
     try {
       const res = await fetch(`/videos.json?t=${Date.now()}`, {
         cache: 'no-store',
@@ -964,71 +1019,72 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     }
   };
 
-  // Central Server Synchronization for Photos, Videos & Settings (Live Cross-Device Sync)
+  // Real-Time Cloud Firestore Subscriptions for Photos, Videos & Products
   useEffect(() => {
     let isMounted = true;
     setPhotosLoading(true);
     setVideosLoading(true);
 
-    const fetchCentralData = async () => {
-      // 1. Photos
-      try {
-        const loadedPhotos = await fetchPhotosData();
-        if (loadedPhotos && isMounted && loadedPhotos.length > 0) {
-          setPhotos(loadedPhotos);
-          try {
-            localStorage.setItem(PHOTOS_KEY, JSON.stringify(loadedPhotos));
-          } catch {}
+    // Initial load from cloud
+    fetchPhotosData()
+      .then((loaded) => {
+        if (isMounted && loaded && loaded.length > 0) {
+          setPhotos(loaded);
+          try { localStorage.setItem(PHOTOS_KEY, JSON.stringify(loaded)); } catch {}
         }
-      } catch (err) {
-        console.warn('Photos central fetch warning:', err);
-      } finally {
+      })
+      .finally(() => {
         if (isMounted) setPhotosLoading(false);
-      }
+      });
 
-      // 2. Videos
-      try {
-        const loadedVideos = await fetchVideosData();
-        if (loadedVideos && isMounted && loadedVideos.length > 0) {
-          setVideos(loadedVideos);
-          try {
-            localStorage.setItem(VIDEOS_KEY, JSON.stringify(loadedVideos));
-          } catch {}
+    fetchVideosData()
+      .then((loaded) => {
+        if (isMounted && loaded && loaded.length > 0) {
+          setVideos(loaded);
+          try { localStorage.setItem(VIDEOS_KEY, JSON.stringify(loaded)); } catch {}
         }
-      } catch (err) {
-        console.warn('Videos central fetch warning:', err);
-      } finally {
+      })
+      .finally(() => {
         if (isMounted) setVideosLoading(false);
-      }
+      });
 
-      // 3. Settings (re-sync on poll / focus)
-      try {
-        const cleanSettings = await fetchSettingsData();
-        if (cleanSettings && isMounted) {
-          setHomepageSettings(cleanSettings);
-          try {
-            localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(cleanSettings));
-          } catch {}
-          const icon = cleanSettings.artistProfileSquare || cleanSettings.artistProfileImage;
-          if (icon) {
-            updateWebsiteFavicon(icon);
-          }
-        }
-      } catch (err) {
-        console.warn('Settings central fetch warning:', err);
-      }
-    };
+    // 1. Real-Time Photos Subscription (All browsers, tabs, and devices update instantly)
+    const unsubPhotos = subscribeToPhotos(
+      (cloudPhotos) => {
+        if (!isMounted || !cloudPhotos || cloudPhotos.length === 0) return;
+        setPhotos(cloudPhotos);
+        try {
+          localStorage.setItem(PHOTOS_KEY, JSON.stringify(cloudPhotos));
+        } catch {}
+      },
+      (err) => console.warn('Firestore photos subscription error:', err)
+    );
 
-    fetchCentralData();
+    // 2. Real-Time Videos Subscription
+    const unsubVideos = subscribeToVideos(
+      (cloudVideos) => {
+        if (!isMounted || !cloudVideos || cloudVideos.length === 0) return;
+        setVideos(cloudVideos);
+        try {
+          localStorage.setItem(VIDEOS_KEY, JSON.stringify(cloudVideos));
+        } catch {}
+      },
+      (err) => console.warn('Firestore videos subscription error:', err)
+    );
 
-    // 5-second poll interval so all visitors and devices receive admin updates live immediately
-    const pollInterval = setInterval(fetchCentralData, 5000);
+    // 3. Real-Time Products Subscription
+    const unsubProducts = subscribeToProducts(
+      (cloudProducts) => {
+        if (!isMounted || !cloudProducts || cloudProducts.length === 0) return;
+        setProducts(cloudProducts);
+        try {
+          localStorage.setItem(PRODUCTS_KEY, JSON.stringify(cloudProducts));
+        } catch {}
+      },
+      (err) => console.warn('Firestore products subscription error:', err)
+    );
 
-    // Tab focus listener for instant refresh when visitor returns to tab
-    const handleFocus = () => fetchCentralData();
-    window.addEventListener('focus', handleFocus);
-
-    // BroadcastChannel for instant 0ms same-browser tab sync
+    // Cross-Tab BroadcastChannel for 0ms instant tab synchronization
     let bc: BroadcastChannel | null = null;
     try {
       bc = new BroadcastChannel('raselbabu_sync');
@@ -1045,33 +1101,22 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
           try {
             localStorage.setItem(VIDEOS_KEY, JSON.stringify(event.data.videos));
           } catch {}
-        } else if (event.data?.type === 'SETTINGS_UPDATED' && event.data.settings) {
-          const clean = sanitizeSettings(event.data.settings);
-          setHomepageSettings(clean);
-          try {
-            localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(clean));
-          } catch {}
-          const icon = clean.artistProfileSquare || clean.artistProfileImage;
-          if (icon) {
-            updateWebsiteFavicon(icon);
-          }
         }
       };
     } catch {}
 
     return () => {
       isMounted = false;
-      clearInterval(pollInterval);
-      window.removeEventListener('focus', handleFocus);
+      unsubPhotos();
+      unsubVideos();
+      unsubProducts();
       if (bc) {
-        try {
-          bc.close();
-        } catch {}
+        try { bc.close(); } catch {}
       }
     };
   }, []);
 
-  // Photo handlers (with Central Persistence)
+  // Photo handlers (Direct Cloud Firestore Persistence & Real-Time Sync)
   const addPhoto = async (photo: Omit<PhotoItem, 'id' | 'views' | 'likes'>): Promise<{ success: boolean; message?: string }> => {
     const newPhoto: PhotoItem = {
       ...photo,
@@ -1080,6 +1125,17 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       views: 0,
       likes: 0,
     };
+
+    // 1. Direct Cloud Firestore save
+    const cloudRes = await savePhotoToFirestore(newPhoto);
+    if (!cloudRes.success) {
+      return {
+        success: false,
+        message: cloudRes.message || 'ক্লাউড ফায়ারবেসে ছবি সংরক্ষণ ব্যর্থ হয়েছে!',
+      };
+    }
+
+    // 2. Update local state & storage
     const updated = [newPhoto, ...photos];
     setPhotos(updated);
     try {
@@ -1087,10 +1143,32 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
-    return await persistPhotosToServer(updated);
+
+    // 3. Optional express backend sync
+    persistPhotosToServer(updated).catch(() => {});
+
+    // 4. Instant tab broadcast
+    try {
+      const bc = new BroadcastChannel('raselbabu_sync');
+      bc.postMessage({ type: 'PHOTOS_UPDATED', photos: updated });
+      bc.close();
+    } catch {}
+
+    return {
+      success: true,
+      message: 'ছবি সফলভাবে ক্লাউড ডাটাবেজে সংরক্ষিত হয়েছে এবং সকল ভিজিটরের জন্য লাইভ হয়েছে!',
+    };
   };
 
   const updatePhoto = async (id: string, updates: Partial<PhotoItem>): Promise<{ success: boolean; message?: string }> => {
+    const cloudRes = await updatePhotoInFirestore(id, updates);
+    if (!cloudRes.success) {
+      return {
+        success: false,
+        message: cloudRes.message || 'ক্লাউড ফায়ারবেসে ছবি আপডেট ব্যর্থ হয়েছে!',
+      };
+    }
+
     const updated = photos.map((p) => {
       if (p.id !== id) return p;
       return {
@@ -1105,10 +1183,30 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
-    return await persistPhotosToServer(updated);
+
+    persistPhotosToServer(updated).catch(() => {});
+
+    try {
+      const bc = new BroadcastChannel('raselbabu_sync');
+      bc.postMessage({ type: 'PHOTOS_UPDATED', photos: updated });
+      bc.close();
+    } catch {}
+
+    return {
+      success: true,
+      message: 'ছবির তথ্য ক্লাউডে সফলভাবে আপডেট হয়েছে!',
+    };
   };
 
   const deletePhoto = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    const cloudRes = await deletePhotoFromFirestore(id);
+    if (!cloudRes.success) {
+      return {
+        success: false,
+        message: cloudRes.message || 'ক্লাউড থেকে ছবি মুছতে ব্যর্থ!',
+      };
+    }
+
     const updated = photos.filter((p) => p.id !== id);
     setPhotos(updated);
     try {
@@ -1116,7 +1214,30 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
-    return await persistPhotosToServer(updated);
+
+    persistPhotosToServer(updated).catch(() => {});
+
+    try {
+      const bc = new BroadcastChannel('raselbabu_sync');
+      bc.postMessage({ type: 'PHOTOS_UPDATED', photos: updated });
+      bc.close();
+    } catch {}
+
+    return {
+      success: true,
+      message: 'ছবি সফলভাবে মুছে ফেলা হয়েছে!',
+    };
+  };
+
+  const syncAllPhotosToCloud = async (): Promise<{ success: boolean; message?: string }> => {
+    if (!photos || photos.length === 0) {
+      return { success: false, message: 'সিঙ্ক করার মতো কোনো ছবি পাওয়া যায়নি।' };
+    }
+    const res = await batchSyncPhotosToFirestore(photos);
+    return {
+      success: res.success,
+      message: res.message,
+    };
   };
 
   const likePhoto = (id: string) => {
@@ -1141,9 +1262,16 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     setAlbums((prev) => prev.filter((a) => a.id !== id));
   };
 
-  // Video handlers (with Central Persistence)
+  // Video handlers (with Cloud Firestore Persistence)
   const addVideo = async (video: Omit<VideoItem, 'id'>): Promise<{ success: boolean; message?: string }> => {
     const newVideo: VideoItem = { ...video, id: `video-${Date.now()}` };
+    const cloudRes = await saveVideoToFirestore(newVideo);
+    if (!cloudRes.success) {
+      return {
+        success: false,
+        message: cloudRes.message || 'ক্লাউডে ভিডিও সংরক্ষণ ব্যর্থ হয়েছে!',
+      };
+    }
     const updated = [newVideo, ...videos];
     setVideos(updated);
     try {
@@ -1151,10 +1279,21 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
-    return await persistVideosToServer(updated);
+    persistVideosToServer(updated).catch(() => {});
+    return {
+      success: true,
+      message: 'ভিডিও সফলভাবে ক্লাউডে সংরক্ষিত হয়েছে!',
+    };
   };
 
   const updateVideo = async (id: string, updatedFields: Partial<VideoItem>): Promise<{ success: boolean; message?: string }> => {
+    const cloudRes = await updateVideoInFirestore(id, updatedFields);
+    if (!cloudRes.success) {
+      return {
+        success: false,
+        message: cloudRes.message || 'ভিডিও আপডেট ব্যর্থ হয়েছে!',
+      };
+    }
     const updated = videos.map((v) => (v.id === id ? { ...v, ...updatedFields } : v));
     setVideos(updated);
     try {
@@ -1162,10 +1301,21 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
-    return await persistVideosToServer(updated);
+    persistVideosToServer(updated).catch(() => {});
+    return {
+      success: true,
+      message: 'ভিডিও সফলভাবে আপডেট হয়েছে!',
+    };
   };
 
   const deleteVideo = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    const cloudRes = await deleteVideoFromFirestore(id);
+    if (!cloudRes.success) {
+      return {
+        success: false,
+        message: cloudRes.message || 'ভিডিও মুছতে ব্যর্থ!',
+      };
+    }
     const updated = videos.filter((v) => v.id !== id);
     setVideos(updated);
     try {
@@ -1173,25 +1323,91 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
-    return await persistVideosToServer(updated);
+    persistVideosToServer(updated).catch(() => {});
+    return {
+      success: true,
+      message: 'ভিডিও সফলভাবে মুছে ফেলা হয়েছে!',
+    };
   };
 
-  // Products handlers
-  const addProduct = (prod: Omit<Product, 'id' | 'createdAt'>) => {
+  // Products handlers (Cloud Firestore Persistence & Real-Time Sync)
+  const addProduct = async (prod: Omit<Product, 'id' | 'createdAt'>): Promise<{ success: boolean; message?: string }> => {
     const newProd: Product = {
       ...prod,
       id: `prod-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
-    setProducts((prev) => [newProd, ...prev]);
+    const cloudRes = await saveProductToFirestore(newProd);
+    if (!cloudRes.success) {
+      return {
+        success: false,
+        message: cloudRes.message || 'ক্লাউড ফায়ারবেসে প্রোডাক্ট সংরক্ষণ ব্যর্থ হয়েছে!',
+      };
+    }
+    const updated = [newProd, ...products];
+    setProducts(updated);
+    try {
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.warn(e);
+    }
+    return {
+      success: true,
+      message: 'প্রোডাক্ট সফলভাবে ক্লাউড স্টোরে সংরক্ষিত হয়েছে এবং সব ভিজিটর ও ডিভাইসের জন্য লাইভ হয়েছে!',
+    };
   };
 
-  const updateProduct = (id: string, updated: Partial<Product>) => {
-    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updated } : p)));
+  const updateProduct = async (id: string, updated: Partial<Product>): Promise<{ success: boolean; message?: string }> => {
+    const cloudRes = await updateProductInFirestore(id, updated);
+    if (!cloudRes.success) {
+      return {
+        success: false,
+        message: cloudRes.message || 'প্রোডাক্ট আপডেট ক্লাউডে ব্যর্থ হয়েছে!',
+      };
+    }
+    const updatedList = products.map((p) => (p.id === id ? { ...p, ...updated } : p));
+    setProducts(updatedList);
+    try {
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(updatedList));
+    } catch (e) {
+      console.warn(e);
+    }
+    return {
+      success: true,
+      message: 'প্রোডাক্ট সফলভাবে ক্লাউডে আপডেট হয়েছে!',
+    };
   };
 
-  const deleteProduct = (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+  const deleteProduct = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    const cloudRes = await deleteProductFromFirestore(id);
+    if (!cloudRes.success) {
+      return {
+        success: false,
+        message: cloudRes.message || 'প্রোডাক্ট ডিলিট ক্লাউডে ব্যর্থ হয়েছে!',
+      };
+    }
+    const updatedList = products.filter((p) => p.id !== id);
+    setProducts(updatedList);
+    try {
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(updatedList));
+    } catch (e) {
+      console.warn(e);
+    }
+    return {
+      success: true,
+      message: 'প্রোডাক্ট ক্লাউড থেকে সফলভাবে মুছে ফেলা হয়েছে!',
+    };
+  };
+
+  const syncAllProductsToCloud = async (): Promise<{ success: boolean; message?: string }> => {
+    if (!products || products.length === 0) {
+      return { success: false, message: 'সিঙ্ক করার মতো কোনো প্রোডাক্ট পাওয়া যায়নি।' };
+    }
+    const res = await batchSyncProductsToFirestore(products);
+    return {
+      success: res.success,
+      message: res.message,
+    };
   };
 
   // Order handlers
@@ -1489,6 +1705,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         likePhoto,
         incrementPhotoViews,
         reloadPhotos,
+        syncAllPhotosToCloud,
         albums,
         addAlbum,
         deleteAlbum,
@@ -1511,6 +1728,8 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         viewingProduct,
         openProductView,
         closeProductView,
+        syncAllProductsToCloud,
+        cloudConnected: true,
         orders,
         placeOrder,
         updateOrderStatus,
