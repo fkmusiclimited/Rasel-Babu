@@ -104,20 +104,18 @@ export function subscribeToPhotos(
   return onSnapshot(
     PHOTOS_COLLECTION,
     (snapshot) => {
-      if (!snapshot.empty) {
-        const list: PhotoItem[] = [];
-        snapshot.forEach((d) => {
-          const item = d.data() as PhotoItem;
-          list.push({ ...item, id: d.id || item.id });
-        });
-        // Sort newest first if dates are available
-        list.sort((a, b) => {
-          const tA = new Date(a.date || 0).getTime();
-          const tB = new Date(b.date || 0).getTime();
-          return tB - tA;
-        });
-        onUpdate(list);
-      }
+      const list: PhotoItem[] = [];
+      snapshot.forEach((d) => {
+        const item = d.data() as PhotoItem;
+        list.push({ ...item, id: d.id || item.id });
+      });
+      // Sort newest first if dates are available
+      list.sort((a, b) => {
+        const tA = new Date(a.date || 0).getTime();
+        const tB = new Date(b.date || 0).getTime();
+        return tB - tA;
+      });
+      onUpdate(list);
     },
     (error) => {
       console.warn('Firestore photos subscription error:', error);
@@ -129,20 +127,17 @@ export function subscribeToPhotos(
 export async function fetchPhotosFromFirestore(): Promise<PhotoItem[] | null> {
   try {
     const snapshot = await getDocs(PHOTOS_COLLECTION);
-    if (!snapshot.empty) {
-      const list: PhotoItem[] = [];
-      snapshot.forEach((d) => {
-        const item = d.data() as PhotoItem;
-        list.push({ ...item, id: d.id || item.id });
-      });
-      list.sort((a, b) => {
-        const tA = new Date(a.date || 0).getTime();
-        const tB = new Date(b.date || 0).getTime();
-        return tB - tA;
-      });
-      return list;
-    }
-    return null;
+    const list: PhotoItem[] = [];
+    snapshot.forEach((d) => {
+      const item = d.data() as PhotoItem;
+      list.push({ ...item, id: d.id || item.id });
+    });
+    list.sort((a, b) => {
+      const tA = new Date(a.date || 0).getTime();
+      const tB = new Date(b.date || 0).getTime();
+      return tB - tA;
+    });
+    return list;
   } catch (err) {
     console.warn('Failed to fetch photos from Firestore:', err);
     return null;

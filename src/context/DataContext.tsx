@@ -1054,7 +1054,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     // 1. Real-Time Photos Subscription (All browsers, tabs, and devices update instantly)
     const unsubPhotos = subscribeToPhotos(
       (cloudPhotos) => {
-        if (!isMounted || !cloudPhotos || cloudPhotos.length === 0) return;
+        if (!isMounted || !cloudPhotos) return;
         setPhotos(cloudPhotos);
         try {
           localStorage.setItem(PHOTOS_KEY, JSON.stringify(cloudPhotos));
@@ -1144,21 +1144,23 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     }
 
     // 2. Update local state & storage
-    const updated = [newPhoto, ...photos];
-    setPhotos(updated);
-    try {
-      localStorage.setItem(PHOTOS_KEY, JSON.stringify(updated));
-    } catch (e) {
-      console.warn(e);
-    }
+    setPhotos((prev) => {
+      const updated = [newPhoto, ...prev.filter((p) => p.id !== newPhoto.id)];
+      try {
+        localStorage.setItem(PHOTOS_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
 
     // 3. Optional express backend sync
-    persistPhotosToServer(updated).catch(() => {});
+    persistPhotosToServer([newPhoto, ...photos]).catch(() => {});
 
     // 4. Instant tab broadcast
     try {
       const bc = new BroadcastChannel('raselbabu_sync');
-      bc.postMessage({ type: 'PHOTOS_UPDATED', photos: updated });
+      bc.postMessage({ type: 'PHOTOS_UPDATED', photos: [newPhoto, ...photos] });
       bc.close();
     } catch {}
 
@@ -1207,19 +1209,22 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
   };
 
   const deletePhoto = async (id: string): Promise<{ success: boolean; message?: string }> => {
-    // 1. Instantly update local state so photo is removed with 0ms lag
-    const updated = photos.filter((p) => p.id !== id);
-    setPhotos(updated);
-    try {
-      localStorage.setItem(PHOTOS_KEY, JSON.stringify(updated));
-    } catch (e) {
-      console.warn(e);
-    }
+    // 1. Instantly update local state with functional update for 0ms lag
+    setPhotos((prev) => {
+      const remaining = prev.filter((p) => p.id !== id);
+      try {
+        localStorage.setItem(PHOTOS_KEY, JSON.stringify(remaining));
+      } catch (e) {
+        console.warn(e);
+      }
+      return remaining;
+    });
 
     // 2. Instant cross-tab broadcast
     try {
       const bc = new BroadcastChannel('raselbabu_sync');
-      bc.postMessage({ type: 'PHOTOS_UPDATED', photos: updated });
+      const remaining = photos.filter((p) => p.id !== id);
+      bc.postMessage({ type: 'PHOTOS_UPDATED', photos: remaining });
       bc.close();
     } catch {}
 

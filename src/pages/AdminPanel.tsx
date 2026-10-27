@@ -2288,7 +2288,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                               onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  const compressed = await compressImageFile(file, 1400, 0.82);
+                                  const compressed = await compressImageFile(file, 1000, 0.75);
                                   if (compressed) setPhotoEditImageUrl(compressed);
                                 }
                               }}
@@ -2391,7 +2391,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                const compressed = await compressImageFile(file, 1400, 0.82);
+                                const compressed = await compressImageFile(file, 1000, 0.75);
                                 if (compressed) {
                                   setNewPhotoData((prev) => ({ ...prev, imageUrl: compressed }));
                                 }
@@ -2411,6 +2411,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                         onChange={(e) => setNewPhotoData({ ...newPhotoData, imageUrl: e.target.value })}
                         className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs text-white font-mono"
                       />
+
+                      {newPhotoData.imageUrl && (
+                        <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center gap-4">
+                          <img
+                            src={newPhotoData.imageUrl}
+                            alt="Preview"
+                            className="w-16 h-16 rounded-lg object-cover border border-amber-400/40"
+                          />
+                          <span className="text-xs text-emerald-400 font-medium">✓ Image selected and ready for publishing</span>
+                        </div>
+                      )}
                     </div>
 
                     <textarea
@@ -2455,9 +2466,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                       </button>
                       <button
                         type="submit"
-                        className="px-6 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-black font-bold rounded-xl text-xs hover:from-amber-300"
+                        disabled={photoSaving}
+                        className="px-6 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-black font-bold rounded-xl text-xs hover:from-amber-300 disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-md"
                       >
-                        Publish Photo to Gallery
+                        {photoSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        <span>{photoSaving ? 'Publishing to Cloud...' : 'Publish Photo to Gallery (ফটো প্রকাশ করুন)'}</span>
                       </button>
                     </div>
                   </form>
