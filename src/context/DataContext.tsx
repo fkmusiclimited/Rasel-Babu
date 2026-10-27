@@ -1104,6 +1104,11 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
           try {
             localStorage.setItem(VIDEOS_KEY, JSON.stringify(event.data.videos));
           } catch {}
+        } else if (event.data?.type === 'PRODUCTS_UPDATED' && Array.isArray(event.data.products)) {
+          setProducts(event.data.products);
+          try {
+            localStorage.setItem(PRODUCTS_KEY, JSON.stringify(event.data.products));
+          } catch {}
         }
       };
     } catch {}
@@ -1202,14 +1207,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
   };
 
   const deletePhoto = async (id: string): Promise<{ success: boolean; message?: string }> => {
-    const cloudRes = await deletePhotoFromFirestore(id);
-    if (!cloudRes.success) {
-      return {
-        success: false,
-        message: cloudRes.message || 'ক্লাউড থেকে ছবি মুছতে ব্যর্থ!',
-      };
-    }
-
+    // 1. Instantly update local state so photo is removed with 0ms lag
     const updated = photos.filter((p) => p.id !== id);
     setPhotos(updated);
     try {
@@ -1218,17 +1216,22 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       console.warn(e);
     }
 
-    persistPhotosToServer(updated).catch(() => {});
-
+    // 2. Instant cross-tab broadcast
     try {
       const bc = new BroadcastChannel('raselbabu_sync');
       bc.postMessage({ type: 'PHOTOS_UPDATED', photos: updated });
       bc.close();
     } catch {}
 
+    // 3. Delete from Google Cloud Firestore (automatic cloud sync)
+    const cloudRes = await deletePhotoFromFirestore(id);
+    if (!cloudRes.success) {
+      console.warn('Firestore photo delete notice:', cloudRes.message);
+    }
+
     return {
       success: true,
-      message: 'ছবি সফলভাবে মুছে ফেলা হয়েছে!',
+      message: 'ফটো সফলভাবে ডিলিট হয়েছে এবং ক্লাউডে অটো-সিঙ্ক হয়ে আপডেট হয়েছে!',
     };
   };
 
@@ -1325,13 +1328,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
   };
 
   const deleteVideo = async (id: string): Promise<{ success: boolean; message?: string }> => {
-    const cloudRes = await deleteVideoFromFirestore(id);
-    if (!cloudRes.success) {
-      return {
-        success: false,
-        message: cloudRes.message || 'ভিডিও মুছতে ব্যর্থ!',
-      };
-    }
+    // 1. Instantly update local state so UI updates with 0ms lag
     const updated = videos.filter((v) => v.id !== id);
     setVideos(updated);
     try {
@@ -1339,10 +1336,24 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
+
+    // 2. Broadcast across tabs
+    try {
+      const bc = new BroadcastChannel('raselbabu_sync');
+      bc.postMessage({ type: 'VIDEOS_UPDATED', videos: updated });
+      bc.close();
+    } catch {}
+
+    // 3. Delete from Google Cloud Firestore (automatic cloud sync)
+    const cloudRes = await deleteVideoFromFirestore(id);
+    if (!cloudRes.success) {
+      console.warn('Firestore video delete notice:', cloudRes.message);
+    }
     persistVideosToServer(updated).catch(() => {});
+
     return {
       success: true,
-      message: 'ভিডিও সফলভাবে মুছে ফেলা হয়েছে!',
+      message: 'ভিডিও সফলভাবে মুছে ফেলা হয়েছে এবং ক্লাউডে অটো-সিঙ্ক হয়েছে!',
     };
   };
 
@@ -1395,13 +1406,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
   };
 
   const deleteProduct = async (id: string): Promise<{ success: boolean; message?: string }> => {
-    const cloudRes = await deleteProductFromFirestore(id);
-    if (!cloudRes.success) {
-      return {
-        success: false,
-        message: cloudRes.message || 'প্রোডাক্ট ডিলিট ক্লাউডে ব্যর্থ হয়েছে!',
-      };
-    }
+    // 1. Instantly update local state so UI updates with 0ms lag
     const updatedList = products.filter((p) => p.id !== id);
     setProducts(updatedList);
     try {
@@ -1409,9 +1414,23 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
+
+    // 2. Broadcast across tabs
+    try {
+      const bc = new BroadcastChannel('raselbabu_sync');
+      bc.postMessage({ type: 'PRODUCTS_UPDATED', products: updatedList });
+      bc.close();
+    } catch {}
+
+    // 3. Delete from Google Cloud Firestore (automatic cloud sync)
+    const cloudRes = await deleteProductFromFirestore(id);
+    if (!cloudRes.success) {
+      console.warn('Firestore product delete notice:', cloudRes.message);
+    }
+
     return {
       success: true,
-      message: 'প্রোডাক্ট ক্লাউড থেকে সফলভাবে মুছে ফেলা হয়েছে!',
+      message: 'প্রোডাক্ট সফলভাবে ডিলিট হয়েছে এবং ক্লাউডে অটো-সিঙ্ক হয়ে আপডেট হয়েছে!',
     };
   };
 

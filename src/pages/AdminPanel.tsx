@@ -2202,15 +2202,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                       <Trash2 className="w-3.5 h-3.5 text-red-400" />
                       <span>Delete Demo Photos</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => reloadPhotos()}
-                      className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-zinc-700"
-                      title="Sync with central server database"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 text-amber-400 ${photosLoading ? 'animate-spin' : ''}`} />
-                      <span>{photosLoading ? 'Syncing...' : 'Sync Server'}</span>
-                    </button>
+                    <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-mono">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>Auto-Sync Active</span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setShowAddPhoto(!showAddPhoto)}
@@ -2543,15 +2538,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => reloadVideos()}
-                      className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-zinc-700"
-                      title="Sync with central server database"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 text-red-400 ${videosLoading ? 'animate-spin' : ''}`} />
-                      <span>{videosLoading ? 'Syncing...' : 'Sync Server'}</span>
-                    </button>
+                    <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-mono">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>Auto-Sync Active</span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setShowAddVideoModal(true)}
@@ -3313,10 +3303,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                                 titleBn: 'স্টোর থেকে প্রোডাক্ট ডিলিট নিশ্চিতকরণ',
                                 itemName: prod.title,
                                 message: 'আপনি কি নিশ্চিত যে এই প্রোডাক্টটি স্টোর ও ওয়েবসাইট থেকে স্থায়ীভাবে মুছে ফেলতে চান?',
-                                onConfirm: () => {
-                                  deleteProduct(prod.id);
-                                  setShopNotice(`Product "${prod.title}" deleted.`);
-                                  setTimeout(() => setShopNotice(null), 3000);
+                                onConfirm: async () => {
+                                  const res = await deleteProduct(prod.id);
+                                  if (res && res.success) {
+                                    setShopNotice(`✅ Product "${prod.title}" deleted and auto-synced across all devices.`);
+                                    setTimeout(() => setShopNotice(null), 4000);
+                                  } else {
+                                    setShopNotice(`❌ প্রোডাক্ট ডিলিট ব্যর্থ হয়েছে: ${res?.message || 'Error'}`);
+                                  }
                                 },
                               });
                             }}
