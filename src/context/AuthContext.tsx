@@ -57,6 +57,42 @@ const saveCred = (email: string, pass: string) => {
   }
 };
 
+export const sanitizeUsers = (rawUsers: User[]): User[] => {
+  if (!Array.isArray(rawUsers)) return INITIAL_USERS;
+  const seenEmails = new Set<string>();
+  const seenIds = new Set<string>();
+  const cleaned: User[] = [];
+
+  for (let i = 0; i < rawUsers.length; i++) {
+    const u = rawUsers[i];
+    if (!u || !u.email) continue;
+    const emailLower = u.email.toLowerCase().trim();
+    if (seenEmails.has(emailLower)) continue;
+    seenEmails.add(emailLower);
+
+    let id = u.id;
+    if (!id || seenIds.has(id)) {
+      if (emailLower === 'fkbabu01@gmail.com') {
+        id = 'user-admin-backup';
+      } else if (emailLower === 'raselbabuwebsiteshop@gmail.com') {
+        id = 'user-admin-1';
+      } else {
+        id = `user-${Date.now()}-${i}`;
+      }
+    }
+    seenIds.add(id);
+    cleaned.push({ ...u, id, email: emailLower });
+  }
+
+  // Ensure primary admin always exists
+  const hasPrimary = cleaned.some((u) => u.email === 'raselbabuwebsiteshop@gmail.com');
+  if (!hasPrimary && INITIAL_USERS[0]) {
+    cleaned.unshift(INITIAL_USERS[0]);
+  }
+
+  return cleaned;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(() => {
     try {
@@ -81,21 +117,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const saved = localStorage.getItem(USERS_STORAGE_KEY);
       if (saved) {
         const parsed: User[] = JSON.parse(saved);
-        const hasPrimaryAdmin = parsed.some(
-          (u) => u.email.toLowerCase() === 'raselbabuwebsiteshop@gmail.com'
-        );
-        if (!hasPrimaryAdmin) {
-          return [
-            INITIAL_USERS[0],
-            ...parsed.filter((u) => u.email.toLowerCase() !== 'raselbabuwebsiteshop@gmail.com'),
-          ];
-        }
-        return parsed;
+        return sanitizeUsers(parsed);
       }
     } catch (e) {
       console.error('Failed to load stored users', e);
     }
-    return INITIAL_USERS;
+    return sanitizeUsers(INITIAL_USERS);
   });
 
   // Sync token to localStorage
@@ -145,7 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
         if (data.users && Array.isArray(data.users)) {
-          setUsers(data.users);
+          setUsers(sanitizeUsers(data.users));
         }
       }
     } catch (err) {

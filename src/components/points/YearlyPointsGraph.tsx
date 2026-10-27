@@ -555,7 +555,7 @@ export const YearlyPointsGraph: React.FC<YearlyPointsGraphProps> = ({
               const ptsInMonth = getMonthlyPoints(u, selectedMonthIndex);
               const color = i === 0 ? 'border-amber-400/50 bg-amber-400/5 text-amber-300' : i === 1 ? 'border-pink-500/40 bg-pink-500/5 text-pink-300' : 'border-cyan-400/40 bg-cyan-400/5 text-cyan-300';
               return (
-                <div key={u.id} className={`p-3 rounded-xl border ${color} flex items-center justify-between`}>
+                <div key={`fan-top-${u.id}-${u.email || ''}-${i}`} className={`p-3 rounded-xl border ${color} flex items-center justify-between`}>
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-xs">#{i + 1}</span>
                     <div className="min-w-0">
@@ -617,7 +617,7 @@ export const YearlyPointsGraph: React.FC<YearlyPointsGraphProps> = ({
 
                 return (
                   <tr
-                    key={u.id}
+                    key={`fan-rank-${u.id}-${u.email || ''}-${idx}`}
                     className={`transition-colors ${
                       isSelf
                         ? 'bg-amber-400/10 hover:bg-amber-400/15'

@@ -77,6 +77,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     deletePhoto,
     reloadPhotos,
     syncAllPhotosToCloud,
+    deleteDemoPhotosFromCloud,
     albums,
     deleteAlbum,
     videos,
@@ -324,6 +325,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
   const [homeArtistProfileSquare, setHomeArtistProfileSquare] = useState(
     homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage || PORTRAIT_IMAGE
   );
+  const [homeWebsiteLogo, setHomeWebsiteLogo] = useState(
+    homepageSettings.websiteLogo || ''
+  );
+  const [isLogoUploading, setIsLogoUploading] = useState(false);
   const [isProfilePhotoUploading, setIsProfilePhotoUploading] = useState(false);
   const [profilePhotoSaveNotice, setProfilePhotoSaveNotice] = useState<string | null>(null);
 
@@ -335,6 +340,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
   // Sync state when homepageSettings updates from persistent storage
   React.useEffect(() => {
     if (!homepageSettings) return;
+    if (homepageSettings.websiteLogo !== undefined) {
+      setHomeWebsiteLogo(homepageSettings.websiteLogo);
+    }
     if (homepageSettings.artistProfileImage) {
       setHomeArtistProfileImage(homepageSettings.artistProfileImage);
     }
@@ -591,19 +599,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        setIsLogoUploading(true);
+        const compressed = await compressImageFile(file, 600, 0.85);
+        if (compressed) {
+          setHomeWebsiteLogo(compressed);
+        }
+      } catch (err) {
+        console.error('Error processing logo:', err);
+      } finally {
+        setIsLogoUploading(false);
+      }
+    }
+  };
+
   const handleSaveArtistProfilePhoto = async () => {
     setIsSavingProfile(true);
     setSaveErrorMessage(null);
     try {
       const res = await updateHomepageSettings({
+        websiteLogo: homeWebsiteLogo,
         artistProfileImage: homeArtistProfileImage,
         artistProfileSquare: homeArtistProfileSquare,
       });
       if (res.success) {
-        setProfilePhotoSaveNotice('✅ রাসেল বাবুর অফিসিয়াল প্রোফাইল ছবি ও ব্রাউজার ফেভিকন সফলভাবে ডাটাবেজে সংরক্ষিত হয়েছে! (Live centrally across all browsers and devices)');
+        setProfilePhotoSaveNotice('✅ রাসেল বাবুর অফিসিয়াল প্রোফাইল ছবি, লোগো ও ব্রাউজার ফেভিকন সফলভাবে ক্লাউড ডাটাবেজে সংরক্ষিত হয়েছে! (Live centrally across all browsers and devices)');
         setTimeout(() => setProfilePhotoSaveNotice(null), 6000);
       } else {
-        setSaveErrorMessage(res.message || 'প্রোফাইল ছবি সংরক্ষণ ব্যর্থ হয়েছে। সার্ভার সংযোগ পরীক্ষা করুন।');
+        setSaveErrorMessage(res.message || 'প্রোফাইল ছবি ও লোগো সংরক্ষণ ব্যর্থ হয়েছে। সার্ভার সংযোগ পরীক্ষা করুন।');
       }
     } catch (err: any) {
       setSaveErrorMessage('সংরক্ষণ ত্রুটি: ' + (err?.message || 'সার্ভার সেভ ব্যর্থ হয়েছে'));
@@ -618,6 +644,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     setSaveErrorMessage(null);
     try {
       const res = await updateHomepageSettings({
+        websiteLogo: homeWebsiteLogo,
         artistProfileImage: homeArtistProfileImage,
         artistProfileSquare: homeArtistProfileSquare,
         heroTagline: homeHeroTagline,
@@ -1685,8 +1712,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                             className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400 font-sans"
                           >
                             <option value="">-- Choose User / ফ্যান মেম্বার নির্বাচন করুন --</option>
-                            {users.map((u) => (
-                              <option key={u.id} value={u.id}>
+                            {users.map((u, idx) => (
+                              <option key={`user-opt-${u.id}-${u.email}-${idx}`} value={u.id}>
                                 {u.name} ({u.email}) · Current: {u.points || 0} pts [{u.role.toUpperCase()}]
                               </option>
                             ))}
@@ -1784,9 +1811,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                           <div className="space-y-2.5">
                             {users
                               .filter((u) => u.status === 'pending')
-                              .map((u) => (
+                              .map((u, idx) => (
                                 <div
-                                  key={u.id}
+                                  key={`pending-user-${u.id}-${u.email}-${idx}`}
                                   className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 space-y-2 text-xs"
                                 >
                                   <div>
@@ -1957,8 +1984,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/60">
-                  {filteredUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-zinc-800/30 transition-colors">
+                  {filteredUsers.map((u, idx) => (
+                    <tr key={`user-row-${u.id}-${u.email}-${idx}`} className="hover:bg-zinc-800/30 transition-colors">
                       <td className="p-4">
                         <div className="font-semibold text-white">{u.name}</div>
                         <div className="text-zinc-400 font-mono text-[11px]">{u.email}</div>
@@ -2152,6 +2179,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                     >
                       <Cloud className={`w-3.5 h-3.5 text-blue-400 ${isSyncingCloud ? 'animate-spin' : ''}`} />
                       <span>{isSyncingCloud ? 'ক্লাউডে সিঙ্ক হচ্ছে...' : 'Push to Cloud (সব ছবি ক্লাউডে সিঙ্ক)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteConfirmModal({
+                          isOpen: true,
+                          title: 'Delete Demo Photos',
+                          titleBn: 'ডেমো ছবি মুছে ফেলা',
+                          itemName: 'Initial Demo Photos (photo-1 to photo-8)',
+                          message: 'আপনি কি নিশ্চিত যে ক্লাউড ডাটাবেজ থেকে পুরোনো ডিফল্ট ডেমো ছবিগুলো মুছে ফেলতে চান? আপনার নিজের আপলোড করা ছবিগুলো অপরিবর্তিত থাকবে।',
+                          onConfirm: async () => {
+                            const res = await deleteDemoPhotosFromCloud();
+                            setPhotoNotice(res.message);
+                            setTimeout(() => setPhotoNotice(null), 5000);
+                          },
+                        });
+                      }}
+                      className="px-3 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-red-500/30"
+                      title="Delete default demo photos from Firestore"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                      <span>Delete Demo Photos</span>
                     </button>
                     <button
                       type="button"
@@ -3412,25 +3461,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   {/* Left Column: Upload Controls & Direct Path */}
                   <div className="lg:col-span-7 space-y-5">
-                    {/* Upload from Device */}
+                    {/* Control 1: Upload Profile Photo from Device */}
                     <div className="p-4.5 rounded-2xl bg-zinc-950/70 border border-zinc-800 space-y-3">
-                      <label className="block text-xs font-bold text-white uppercase tracking-wider font-mono">
-                        1. Upload Profile Photo from Device (ডিভাইস থেকে ছবি আপলোড)
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-bold text-white uppercase tracking-wider font-mono">
+                          1. রাসেল বাবুর প্রোফাইল ছবি (Artist Profile Photo)
+                        </label>
+                        <span className="text-[10px] font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
+                          About &amp; Dashboard
+                        </span>
+                      </div>
                       <p className="text-[11px] text-zinc-400">
-                        সরাসরি মোবাইল বা কম্পিউটার থেকে রাসেল বাবুর যেকোনো হাই-কোয়ালিটি ছবি সিলেক্ট করুন। সিস্টেম স্বয়ংক্রিয়ভাবে অপটিমাইজ করে একটি ফুল প্রোফাইল ইমেজ এবং নিখুঁত ১:১ স্কয়ার ফেভিকন তৈরি করবে।
+                        ডিভাইস থেকে রাসেল বাবুর আসল পোর্ট্রেট ছবি সিলেক্ট করুন। এটি About পেজ, ইউজার ড্যাশবোর্ড এবং হোমপেজে স্থায়ীভাবে প্রদর্শিত হবে।
                       </p>
                       <div className="flex flex-wrap items-center gap-3 pt-1">
                         <label className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-black font-bold text-xs cursor-pointer flex items-center gap-2.5 shadow-md shadow-amber-400/20 active:scale-95 transition-all">
                           {isProfilePhotoUploading ? (
                             <>
                               <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                              <span>Processing &amp; Cropping Photo...</span>
+                              <span>Processing Photo...</span>
                             </>
                           ) : (
                             <>
                               <Upload className="w-4 h-4" />
-                              <span>Select Image to Upload (ফটো পছন্দ করুন)</span>
+                              <span>Upload Profile Photo (ছবি আপলোড করুন)</span>
                             </>
                           )}
                           <input
@@ -3446,28 +3500,86 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                           onClick={() => handleSelectProfilePreset(PORTRAIT_IMAGE)}
                           className="px-4 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium border border-zinc-700 cursor-pointer transition-colors"
                         >
-                          Reset to Original Portrait
+                          Reset Portrait
                         </button>
                       </div>
-                    </div>
-
-                    {/* Direct Image URL input */}
-                    <div className="p-4.5 rounded-2xl bg-zinc-950/70 border border-zinc-800 space-y-2">
-                      <label className="block text-xs font-bold text-white uppercase tracking-wider font-mono">
-                        2. Or Enter Photo URL / Cloud Link (অথবা ইমেজের সরাসরি লিংক দিন)
-                      </label>
-                      <div className="flex items-center gap-2">
+                      <div className="pt-1">
                         <input
                           type="text"
                           value={homeArtistProfileImage}
                           onChange={(e) => handleProfilePhotoUrlChange(e.target.value)}
-                          placeholder="https://... or /assets/images/..."
-                          className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                          placeholder="Or enter image URL: https://... or /assets/images/..."
+                          className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
                         />
                       </div>
                     </div>
 
-                    {/* Quick Official Presets */}
+                    {/* Control 2: Upload Website Logo & Header Brand Icon */}
+                    <div className="p-4.5 rounded-2xl bg-zinc-950/70 border border-zinc-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-bold text-white uppercase tracking-wider font-mono">
+                          2. ওয়েবসাইট লোগো ও ন্যাভবার আইকন (Website Logo &amp; Header Avatar)
+                        </label>
+                        <span className="text-[10px] font-mono text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded border border-cyan-400/20">
+                          Navbar &amp; Favicon
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-400">
+                        ওয়েবসাইট হেডার ন্যাভবারে "RASEL BABU" লেখার পাশে এবং ব্রাউজার ট্যাবে ফেভিকন হিসেবে যে লোগো বা বৃত্তাকার ফটো দেখাবে তা আপলোড করুন।
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3 pt-1">
+                        <label className="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs cursor-pointer flex items-center gap-2.5 shadow-md shadow-cyan-500/20 active:scale-95 transition-all">
+                          {isLogoUploading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              <span>Processing Logo...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4" />
+                              <span>Upload Website Logo (লোগো আপলোড)</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            disabled={isLogoUploading}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHomeWebsiteLogo(homeArtistProfileSquare || homeArtistProfileImage);
+                          }}
+                          className="px-4 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium border border-zinc-700 cursor-pointer transition-colors"
+                          title="Use current square profile photo as the website logo"
+                        >
+                          Use Profile Photo as Logo
+                        </button>
+                        {homeWebsiteLogo && (
+                          <button
+                            type="button"
+                            onClick={() => setHomeWebsiteLogo('')}
+                            className="px-3 py-3 rounded-xl bg-red-950/60 hover:bg-red-900/80 text-red-300 text-xs font-medium border border-red-500/30 cursor-pointer"
+                          >
+                            Clear Logo
+                          </button>
+                        )}
+                      </div>
+                      <div className="pt-1">
+                        <input
+                          type="text"
+                          value={homeWebsiteLogo}
+                          onChange={(e) => setHomeWebsiteLogo(e.target.value)}
+                          placeholder="Or enter logo URL / SVG: /000111.svg or https://..."
+                          className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Quick Presets */}
                     <div className="p-4.5 rounded-2xl bg-zinc-950/70 border border-zinc-800 space-y-2.5">
                       <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider font-bold block">
                         3. Quick Official Artist Photo Presets (অফিসিয়াল ফটো প্রিসেট):
@@ -3493,7 +3605,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                     </div>
                   </div>
 
-                  {/* Right Column: Live Previews (Dual: Public Artist Profile Card + Real Browser Tab Favicon Simulation) */}
+                  {/* Right Column: Live Previews (Navbar Brand Logo + Favicon + Profile Card) */}
                   <div className="lg:col-span-5 space-y-4">
                     <div className="p-4.5 rounded-2xl bg-zinc-950/90 border border-zinc-800 space-y-4 shadow-xl">
                       <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
@@ -3502,21 +3614,43 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                           <span>Live Multi-Placement Previews</span>
                         </span>
                         <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
-                          Active Sync
+                          Firestore Cloud Synced
                         </span>
                       </div>
 
-                      {/* Preview A: Browser Tab & Favicon Simulation */}
+                      {/* Preview 1: Website Header Navbar Brand Logo */}
                       <div className="space-y-1.5">
                         <span className="text-[11px] font-mono text-zinc-400">
-                          A. Browser Tab Favicon Preview (ব্রাউজার ট্যাবে যেমন দেখাবে):
+                          1. Header Navbar Logo (ওয়েবসাইট হেডারে যেভাবে দেখাবে):
+                        </span>
+                        <div className="bg-[#08080a] rounded-xl p-3 border border-zinc-800 flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-full overflow-hidden border border-amber-400/60 shadow-sm shrink-0 bg-zinc-900">
+                              <img
+                                src={homeWebsiteLogo || homeArtistProfileSquare || homeArtistProfileImage}
+                                alt="Header Logo Preview"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <span className="font-display text-xl font-bold tracking-tight text-white">
+                              RASEL BABU
+                            </span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
+                          </div>
+                          <span className="text-[10px] font-mono text-zinc-500">Preview</span>
+                        </div>
+                      </div>
+
+                      {/* Preview 2: Browser Tab & Favicon Simulation */}
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] font-mono text-zinc-400">
+                          2. Browser Tab Favicon Preview (ব্রাউজার ট্যাবে যেমন দেখাবে):
                         </span>
                         <div className="bg-[#1e1f22] rounded-t-xl p-2.5 border border-zinc-700 shadow-md">
                           <div className="flex items-center gap-2 max-w-[240px] bg-[#2b2d30] px-3 py-1.5 rounded-lg border-t-2 border-amber-400">
-                            {/* Favicon Icon */}
                             <div className="w-4 h-4 rounded shrink-0 overflow-hidden bg-black flex items-center justify-center">
                               <img
-                                src={homeArtistProfileSquare || homeArtistProfileImage}
+                                src={homeWebsiteLogo || homeArtistProfileSquare || homeArtistProfileImage}
                                 alt="Favicon"
                                 className="w-full h-full object-cover"
                               />
@@ -3529,14 +3663,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                         </div>
                       </div>
 
-                      {/* Preview B: Main Artist Portrait Profile Card */}
+                      {/* Preview 3: Main Artist Portrait Profile Card */}
                       <div className="space-y-1.5">
                         <span className="text-[11px] font-mono text-zinc-400">
-                          B. Website Public Profile Photo (About ও ড্যাশবোর্ডে যেমন দেখাবে):
+                          3. Official Profile Portrait (About ও প্রোফাইলে যেমন দেখাবে):
                         </span>
                         <div className="flex items-center gap-4 p-3 bg-zinc-900/60 rounded-xl border border-zinc-800">
-                          {/* Portrait preview card */}
-                          <div className="w-24 h-32 rounded-xl overflow-hidden border-2 border-amber-500/40 shadow-lg shrink-0 relative bg-black group">
+                          <div className="w-20 h-28 rounded-xl overflow-hidden border-2 border-amber-500/40 shadow-lg shrink-0 relative bg-black group">
                             <img
                               src={homeArtistProfileImage}
                               alt="Profile Preview"
@@ -3547,27 +3680,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                             </div>
                           </div>
 
-                          {/* 1:1 Square Avatar Preview */}
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-3">
-                              <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-amber-400 shadow-md shrink-0 bg-black">
-                                <img
-                                  src={homeArtistProfileSquare || homeArtistProfileImage}
-                                  alt="Square Avatar"
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-xs font-bold text-white truncate">Rasel Babu</p>
-                                <p className="text-[10px] text-amber-400 font-mono">1:1 Square Favicon</p>
-                                <span className="inline-block mt-0.5 text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">
-                                  256×256 High-Res
-                                </span>
-                              </div>
-                            </div>
-
+                          <div className="space-y-1.5 min-w-0">
+                            <p className="text-xs font-bold text-white truncate">Rasel Babu</p>
+                            <p className="text-[10px] text-amber-400 font-mono">Actor, Singer &amp; Model</p>
                             <p className="text-[11px] text-zinc-400 leading-tight">
-                              This photo represents Rasel Babu globally across all pages and the browser tab.
+                              এই ডেটা সরাসরি ফায়ারস্টোর ডাটাবেজে পারসিস্ট হবে এবং সকল ভিজিটরের কাছে সাথে সাথে লাইভ দেখাবে।
                             </p>
                           </div>
                         </div>
@@ -3579,17 +3696,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                           type="button"
                           onClick={handleSaveArtistProfilePhoto}
                           disabled={isSavingProfile}
-                          className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-black font-bold text-xs shadow-lg shadow-amber-400/20 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98 disabled:opacity-50"
+                          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-black font-bold text-xs shadow-lg shadow-amber-400/20 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98 disabled:opacity-50"
                         >
                           {isSavingProfile ? (
                             <>
                               <Loader2 className="w-4 h-4 animate-spin text-black" />
-                              <span>ডাটাবেজে সংরক্ষণ হচ্ছে... (Saving to Database)</span>
+                              <span>ফায়ারস্টোরে সংরক্ষণ হচ্ছে... (Saving to Firestore)</span>
                             </>
                           ) : (
                             <>
                               <Check className="w-4 h-4" />
-                              <span>Save Rasel Babu Profile Photo &amp; Favicon Now</span>
+                              <span>Save Profile Photo &amp; Logo to Firestore Now</span>
                             </>
                           )}
                         </button>

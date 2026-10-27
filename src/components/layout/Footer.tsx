@@ -1,6 +1,7 @@
 import React from 'react';
 import { Youtube, Facebook, Instagram, Music, MessageCircle, ExternalLink, ShieldCheck } from 'lucide-react';
 import { useData } from '../../context/DataContext';
+import { PORTRAIT_IMAGE } from '../../data/seedData';
 
 interface FooterProps {
   onNavigate: (path: string) => void;
@@ -22,7 +23,14 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-zinc-800/60">
           {/* Col 1 & 2: Brand & Artist Statement */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full overflow-hidden border border-amber-400/40 shrink-0 bg-zinc-900">
+                <img
+                  src={homepageSettings.websiteLogo || homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage || PORTRAIT_IMAGE}
+                  alt="Rasel Babu Logo"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <span className="font-display text-3xl font-bold tracking-tight text-white">
                 RASEL BABU
               </span>

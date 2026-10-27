@@ -143,7 +143,20 @@ function sanitizeUser(user: StoredUser) {
 function readUsers(): StoredUser[] {
   try {
     if (!fs.existsSync(USERS_FILE)) return [];
-    return JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
+    const list: StoredUser[] = JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
+    const seenIds = new Set<string>();
+    return list.map((u, idx) => {
+      let id = u.id;
+      if (!id || seenIds.has(id)) {
+        if (u.email.toLowerCase() === 'fkbabu01@gmail.com') {
+          id = 'user-admin-backup';
+        } else {
+          id = `${u.id || 'user'}-${idx}`;
+        }
+      }
+      seenIds.add(id);
+      return { ...u, id };
+    });
   } catch {
     return [];
   }

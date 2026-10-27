@@ -45,6 +45,7 @@ import {
   updatePhotoInFirestore,
   deletePhotoFromFirestore,
   batchSyncPhotosToFirestore,
+  deleteDemoPhotosFromFirestore,
   subscribeToProducts,
   saveProductToFirestore,
   updateProductInFirestore,
@@ -76,6 +77,7 @@ interface DataContextType {
   incrementPhotoViews: (id: string) => void;
   reloadPhotos: () => Promise<void>;
   syncAllPhotosToCloud: () => Promise<{ success: boolean; message?: string }>;
+  deleteDemoPhotosFromCloud: () => Promise<{ success: boolean; message: string }>;
 
   // Albums & Music
   albums: Album[];
@@ -505,6 +507,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
   if (!raw || typeof raw !== 'object') return { ...INITIAL_HOMEPAGE_SETTINGS };
   const merged: HomepageSettings = { ...INITIAL_HOMEPAGE_SETTINGS, ...raw };
 
+  merged.websiteLogo = normalizeImagePath(merged.websiteLogo) || '';
   merged.aboutImageUrl = normalizeImagePath(merged.aboutImageUrl);
   merged.heroImageUrl = normalizeImagePath(merged.heroImageUrl);
   merged.annualGiftImage = normalizeImagePath(merged.annualGiftImage);
@@ -583,7 +586,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       try {
         localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(clean));
       } catch {}
-      const icon = clean.artistProfileSquare || clean.artistProfileImage;
+      const icon = clean.websiteLogo || clean.artistProfileSquare || clean.artistProfileImage;
       if (icon) {
         updateWebsiteFavicon(icon);
       }
@@ -606,7 +609,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         } catch (e) {
           console.warn('LocalStorage sync warning:', e);
         }
-        const icon = clean.artistProfileSquare || clean.artistProfileImage;
+        const icon = clean.websiteLogo || clean.artistProfileSquare || clean.artistProfileImage;
         if (icon) {
           updateWebsiteFavicon(icon);
         }
@@ -624,7 +627,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         try {
           localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(clean));
         } catch {}
-        const icon = clean.artistProfileSquare || clean.artistProfileImage;
+        const icon = clean.websiteLogo || clean.artistProfileSquare || clean.artistProfileImage;
         if (icon) {
           updateWebsiteFavicon(icon);
         }
@@ -676,7 +679,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     try {
       localStorage.setItem(HOMEPAGE_SETTINGS_KEY, JSON.stringify(updated));
     } catch {}
-    const icon = updated.artistProfileSquare || updated.artistProfileImage;
+    const icon = updated.websiteLogo || updated.artistProfileSquare || updated.artistProfileImage;
     if (icon) {
       updateWebsiteFavicon(icon);
     }
@@ -1240,6 +1243,19 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     };
   };
 
+  const deleteDemoPhotosFromCloud = async (): Promise<{ success: boolean; message: string }> => {
+    const res = await deleteDemoPhotosFromFirestore();
+    if (res.success) {
+      const demoIds = ['photo-1', 'photo-2', 'photo-3', 'photo-4', 'photo-5', 'photo-6', 'photo-7', 'photo-8'];
+      setPhotos((prev) => prev.filter((p) => !demoIds.includes(p.id)));
+      try {
+        const remaining = photos.filter((p) => !demoIds.includes(p.id));
+        localStorage.setItem(PHOTOS_KEY, JSON.stringify(remaining));
+      } catch {}
+    }
+    return res;
+  };
+
   const likePhoto = (id: string) => {
     setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, likes: p.likes + 1 } : p)));
   };
@@ -1706,6 +1722,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         incrementPhotoViews,
         reloadPhotos,
         syncAllPhotosToCloud,
+        deleteDemoPhotosFromCloud,
         albums,
         addAlbum,
         deleteAlbum,

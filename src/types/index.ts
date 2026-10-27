@@ -209,6 +209,7 @@ export interface OrderItem {
 }
 
 export interface HomepageSettings {
+  websiteLogo?: string;
   artistProfileImage?: string;
   artistProfileSquare?: string;
   heroTagline: string;

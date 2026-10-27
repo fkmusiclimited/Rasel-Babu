@@ -10,8 +10,8 @@
     "bio": "Official website owner and primary artist administrator.",
     "registeredAt": "2025-01-01T00:00:00.000Z",
     "approvedAt": "2025-01-01T00:00:00.000Z",
-    "salt": "146505d8435b34292f7dc5d180928f84",
-    "passwordHash": "ee123491be816daf1ed32efb8698a91abdea86b85f8ede9afcbc5b0c10940f330a5c3505a45ebc370011257780d3e189dec3bd71301269d1f32dd82a02fa164e"
+    "salt": "3f31539dde10a4d81751d107ce901a99",
+    "passwordHash": "6b2af70e53b1fd0a8f14eff227f7454c893278c5f8d2233addb7225f22c30e2330fd44696f7642a165a549000a5d81e918bb482d4418b7ba5321bcacbf4125a5"
   },
   {
     "id": "user-google-1792154609166",
@@ -27,8 +27,8 @@
     "passwordHash": "d659faf9d5bf60c33aa9658c5a5ad9cc79396524fc8ce63e9842e09eafe0c672108bee3beab43877951d26f7771c47c0d31624ff5888ad37bdba7c61fced7533"
   },
   {
-    "id": "user-admin-1",
-    "name": "Rasel Babu (Executive Management)",
+    "id": "user-admin-backup",
+    "name": "Rasel Babu (Admin Backup)",
     "email": "fkbabu01@gmail.com",
     "phone": "+880 1711-000000",
     "role": "admin",

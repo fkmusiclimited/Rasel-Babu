@@ -40,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
         >
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border border-amber-400/50 shadow-sm shrink-0 bg-zinc-900 group-hover:border-amber-400 group-hover:scale-105 transition-all">
             <img
-              src={homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage || PORTRAIT_IMAGE}
+              src={homepageSettings.websiteLogo || homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage || PORTRAIT_IMAGE}
               alt="Rasel Babu"
               className="w-full h-full object-cover"
             />
@@ -189,7 +189,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
           <div className="flex items-center gap-3 p-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl">
             <div className="w-10 h-10 rounded-full overflow-hidden border border-amber-400/40 shrink-0 bg-black">
               <img
-                src={homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage || PORTRAIT_IMAGE}
+                src={homepageSettings.websiteLogo || homepageSettings.artistProfileSquare || homepageSettings.artistProfileImage || PORTRAIT_IMAGE}
                 alt="Rasel Babu"
                 className="w-full h-full object-cover"
               />

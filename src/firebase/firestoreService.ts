@@ -232,6 +232,26 @@ export async function batchSyncPhotosToFirestore(
   }
 }
 
+export async function deleteDemoPhotosFromFirestore(): Promise<{ success: boolean; message: string }> {
+  try {
+    const demoIds = ['photo-1', 'photo-2', 'photo-3', 'photo-4', 'photo-5', 'photo-6', 'photo-7', 'photo-8'];
+    const batch = writeBatch(db);
+    for (const id of demoIds) {
+      batch.delete(doc(db, 'photos', id));
+    }
+    await batch.commit();
+    return {
+      success: true,
+      message: 'সব ডেমো ছবি সফলভাবে ক্লাউড থেকে মুছে ফেলা হয়েছে!',
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: 'ডেমো ছবি মুছতে ব্যর্থ: ' + (err?.message || 'Firestore error'),
+    };
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Shop Products (Merchandise, Fan Apparel, Dress, etc.)
 // ---------------------------------------------------------------------------
