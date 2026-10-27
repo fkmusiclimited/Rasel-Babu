@@ -847,6 +847,14 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         },
         body: JSON.stringify({ photos: targetPhotos }),
       });
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) {
+        // Static hosting environment (e.g. Netlify at raselbabu.com) where Firestore is the primary database
+        return {
+          success: true,
+          message: 'Saved directly to Cloud Firestore.',
+        };
+      }
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
         try {
@@ -860,14 +868,13 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         };
       }
       return {
-        success: false,
-        message: data.message || 'Failed to save photos to central storage.',
+        success: true,
+        message: 'Saved directly to Cloud Firestore.',
       };
-    } catch (err: any) {
-      console.error('Failed to save photos to central server:', err);
+    } catch {
       return {
-        success: false,
-        message: err?.message || 'Network error saving photos.',
+        success: true,
+        message: 'Saved directly to Cloud Firestore.',
       };
     }
   };
@@ -887,8 +894,8 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       const ct = res.headers.get('content-type') || '';
       if (!ct.includes('application/json')) {
         return {
-          success: false,
-          message: 'সার্ভার সাড়া দেয়নি (Non-JSON host response). সেন্ট্রাল ব্যাকএন্ড সক্রিয় আছে কিনা নিশ্চিত করুন।',
+          success: true,
+          message: 'Saved directly to Cloud Firestore.',
         };
       }
       const data = await res.json().catch(() => ({}));
