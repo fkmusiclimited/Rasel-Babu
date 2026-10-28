@@ -56,6 +56,12 @@ import {
   saveVideoToFirestore,
   updateVideoInFirestore,
   deleteVideoFromFirestore,
+  subscribeToNews,
+  fetchNewsFromFirestore,
+  saveNewsToFirestore,
+  updateNewsInFirestore,
+  deleteNewsFromFirestore,
+  batchSyncNewsToFirestore,
 } from '../firebase/firestoreService';
 
 interface ActiveTrackState {
@@ -117,10 +123,14 @@ interface DataContextType {
   updateOrderStatus: (id: string, status: OrderItem['status']) => void;
   deleteOrder: (id: string) => void;
 
-  // News
+  // News (Centrally Persisted in Cloud & Live Synced across all devices)
   news: NewsArticle[];
-  addNewsArticle: (article: Omit<NewsArticle, 'id'>) => void;
-  deleteNewsArticle: (id: string) => void;
+  newsLoading: boolean;
+  addNewsArticle: (article: Omit<NewsArticle, 'id'>) => Promise<{ success: boolean; message?: string }>;
+  updateNewsArticle: (id: string, updates: Partial<NewsArticle>) => Promise<{ success: boolean; message?: string }>;
+  deleteNewsArticle: (id: string) => Promise<{ success: boolean; message?: string }>;
+  reloadNews: () => Promise<void>;
+  syncAllNewsToCloud: () => Promise<{ success: boolean; message?: string }>;
 
   // Tour
   tourEvents: TourEvent[];
@@ -392,6 +402,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   // News
+  const [newsLoading, setNewsLoading] = useState(false);
   const [news, setNews] = useState<NewsArticle[]>(() => {
     try {
       const saved = localStorage.getItem(NEWS_KEY);
@@ -1029,11 +1040,58 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     }
   };
 
-  // Real-Time Cloud Firestore Subscriptions for Photos, Videos & Products
+  const fetchNewsData = async (): Promise<NewsArticle[] | null> => {
+    // 1. Direct Cloud Firestore fetch
+    try {
+      const cloudNews = await fetchNewsFromFirestore();
+      if (cloudNews && cloudNews.length > 0) {
+        return cloudNews;
+      }
+      // If Firestore is empty, auto-seed INITIAL_NEWS so cloud documents are initialized
+      if (cloudNews && cloudNews.length === 0 && INITIAL_NEWS && INITIAL_NEWS.length > 0) {
+        batchSyncNewsToFirestore(INITIAL_NEWS).catch(() => {});
+        return INITIAL_NEWS;
+      }
+    } catch (e) {
+      console.warn('Failed to fetch news from firestore:', e);
+    }
+
+    // 2. Local storage fallback
+    try {
+      const saved = localStorage.getItem(NEWS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+
+    return INITIAL_NEWS;
+  };
+
+  const reloadNews = async () => {
+    const loaded = await fetchNewsData();
+    if (loaded && loaded.length > 0) {
+      setNews(loaded);
+      try {
+        localStorage.setItem(NEWS_KEY, JSON.stringify(loaded));
+      } catch {}
+    }
+  };
+
+  const syncAllNewsToCloud = async (): Promise<{ success: boolean; message?: string }> => {
+    if (!news || news.length === 0) {
+      return { success: false, message: 'সিঙ্ক করার মতো কোনো নিউজ আর্টিকেল পাওয়া যায়নি।' };
+    }
+    const res = await batchSyncNewsToFirestore(news);
+    return res;
+  };
+
+  // Real-Time Cloud Firestore Subscriptions for Photos, Videos, Products & News
   useEffect(() => {
     let isMounted = true;
     setPhotosLoading(true);
     setVideosLoading(true);
+    setNewsLoading(true);
 
     // Initial load from cloud
     fetchPhotosData()
@@ -1056,6 +1114,17 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       })
       .finally(() => {
         if (isMounted) setVideosLoading(false);
+      });
+
+    fetchNewsData()
+      .then((loaded) => {
+        if (isMounted && loaded && loaded.length > 0) {
+          setNews(loaded);
+          try { localStorage.setItem(NEWS_KEY, JSON.stringify(loaded)); } catch {}
+        }
+      })
+      .finally(() => {
+        if (isMounted) setNewsLoading(false);
       });
 
     // 1. Real-Time Photos Subscription (All browsers, tabs, and devices update instantly)
@@ -1094,6 +1163,18 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       (err) => console.warn('Firestore products subscription error:', err)
     );
 
+    // 4. Real-Time News Subscription (Live synced across all visitors and devices)
+    const unsubNews = subscribeToNews(
+      (cloudNews) => {
+        if (!isMounted || !cloudNews || cloudNews.length === 0) return;
+        setNews(cloudNews);
+        try {
+          localStorage.setItem(NEWS_KEY, JSON.stringify(cloudNews));
+        } catch {}
+      },
+      (err) => console.warn('Firestore news subscription error:', err)
+    );
+
     // Cross-Tab BroadcastChannel for 0ms instant tab synchronization
     let bc: BroadcastChannel | null = null;
     try {
@@ -1116,6 +1197,11 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
           try {
             localStorage.setItem(PRODUCTS_KEY, JSON.stringify(event.data.products));
           } catch {}
+        } else if (event.data?.type === 'NEWS_UPDATED' && Array.isArray(event.data.news)) {
+          setNews(event.data.news);
+          try {
+            localStorage.setItem(NEWS_KEY, JSON.stringify(event.data.news));
+          } catch {}
         }
       };
     } catch {}
@@ -1125,6 +1211,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       unsubPhotos();
       unsubVideos();
       unsubProducts();
+      unsubNews();
       if (bc) {
         try { bc.close(); } catch {}
       }
@@ -1477,14 +1564,78 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     setOrders((prev) => prev.filter((o) => o.id !== id));
   };
 
-  // News handlers
-  const addNewsArticle = (article: Omit<NewsArticle, 'id'>) => {
-    const newNews: NewsArticle = { ...article, id: `news-${Date.now()}` };
-    setNews((prev) => [newNews, ...prev]);
+  // News handlers (Cloud Firestore Persistence & Real-Time Sync)
+  const addNewsArticle = async (article: Omit<NewsArticle, 'id'>): Promise<{ success: boolean; message?: string }> => {
+    const newArticle: NewsArticle = {
+      ...article,
+      id: `news-${Date.now()}`,
+    };
+    const cloudRes = await saveNewsToFirestore(newArticle);
+    if (!cloudRes.success) {
+      return {
+        success: false,
+        message: cloudRes.message || 'ক্লাউড ফায়ারবেসে নিউজ সংরক্ষণ ব্যর্থ হয়েছে!',
+      };
+    }
+    const updated = [newArticle, ...news];
+    setNews(updated);
+    try {
+      localStorage.setItem(NEWS_KEY, JSON.stringify(updated));
+      const bc = new BroadcastChannel('raselbabu_sync');
+      bc.postMessage({ type: 'NEWS_UPDATED', news: updated });
+      bc.close();
+    } catch (e) {
+      console.warn(e);
+    }
+    return {
+      success: true,
+      message: 'নিউজ আর্টিকেল সফলভাবে ক্লাউড ডাটাবেজে সংরক্ষিত ও সব ভিজিটরের জন্য লাইভ হয়েছে!',
+    };
   };
 
-  const deleteNewsArticle = (id: string) => {
-    setNews((prev) => prev.filter((n) => n.id !== id));
+  const updateNewsArticle = async (id: string, updates: Partial<NewsArticle>): Promise<{ success: boolean; message?: string }> => {
+    const cloudRes = await updateNewsInFirestore(id, updates);
+    if (!cloudRes.success) {
+      return {
+        success: false,
+        message: cloudRes.message || 'নিউজ আপডেট ক্লাউডে ব্যর্থ হয়েছে!',
+      };
+    }
+    const updatedList = news.map((n) => (n.id === id ? { ...n, ...updates } : n));
+    setNews(updatedList);
+    try {
+      localStorage.setItem(NEWS_KEY, JSON.stringify(updatedList));
+      const bc = new BroadcastChannel('raselbabu_sync');
+      bc.postMessage({ type: 'NEWS_UPDATED', news: updatedList });
+      bc.close();
+    } catch (e) {
+      console.warn(e);
+    }
+    return {
+      success: true,
+      message: 'নিউজ আর্টিকেল সফলভাবে ক্লাউডে আপডেট হয়েছে!',
+    };
+  };
+
+  const deleteNewsArticle = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    const cloudRes = await deleteNewsFromFirestore(id);
+    const updatedList = news.filter((n) => n.id !== id);
+    setNews(updatedList);
+    try {
+      localStorage.setItem(NEWS_KEY, JSON.stringify(updatedList));
+      const bc = new BroadcastChannel('raselbabu_sync');
+      bc.postMessage({ type: 'NEWS_UPDATED', news: updatedList });
+      bc.close();
+    } catch (e) {
+      console.warn(e);
+    }
+    if (!cloudRes.success) {
+      console.warn('Firestore news delete notice:', cloudRes.message);
+    }
+    return {
+      success: true,
+      message: 'নিউজ আর্টিকেল সফলভাবে মুছে ফেলা হয়েছে এবং ক্লাউডে অটো-সিঙ্ক হয়েছে!',
+    };
   };
 
   // Tour handlers
@@ -1783,8 +1934,12 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         updateOrderStatus,
         deleteOrder,
         news,
+        newsLoading,
         addNewsArticle,
+        updateNewsArticle,
         deleteNewsArticle,
+        reloadNews,
+        syncAllNewsToCloud,
         tourEvents,
         addTourEvent,
         deleteTourEvent,

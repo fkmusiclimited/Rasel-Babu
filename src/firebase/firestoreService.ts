@@ -11,7 +11,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './config';
-import { PhotoItem, Product, VideoItem, HomepageSettings } from '../types';
+import { PhotoItem, Product, VideoItem, HomepageSettings, NewsArticle } from '../types';
 
 /**
  * Remove any undefined values recursively before passing to Firestore
@@ -478,3 +478,134 @@ export async function deleteVideoFromFirestore(
     };
   }
 }
+
+// ---------------------------------------------------------------------------
+// News & Press Releases (Live synced across all devices and visitors)
+// ---------------------------------------------------------------------------
+const NEWS_COLLECTION = collection(db, 'news');
+
+export function subscribeToNews(
+  onUpdate: (news: NewsArticle[]) => void,
+  onError?: (err: Error) => void
+): Unsubscribe {
+  return onSnapshot(
+    NEWS_COLLECTION,
+    (snapshot) => {
+      if (!snapshot.empty) {
+        const list: NewsArticle[] = [];
+        snapshot.forEach((d) => {
+          const item = d.data() as NewsArticle;
+          list.push({ ...item, id: d.id || item.id });
+        });
+        // Sort newest first by publishDate or id
+        list.sort((a, b) => (b.publishDate || '').localeCompare(a.publishDate || '') || b.id.localeCompare(a.id));
+        onUpdate(list);
+      }
+    },
+    (error) => {
+      console.warn('Firestore news subscription error:', error);
+      if (onError) onError(error);
+    }
+  );
+}
+
+export async function fetchNewsFromFirestore(): Promise<NewsArticle[] | null> {
+  try {
+    const snapshot = await getDocs(NEWS_COLLECTION);
+    if (!snapshot.empty) {
+      const list: NewsArticle[] = [];
+      snapshot.forEach((d) => {
+        const item = d.data() as NewsArticle;
+        list.push({ ...item, id: d.id || item.id });
+      });
+      list.sort((a, b) => (b.publishDate || '').localeCompare(a.publishDate || '') || b.id.localeCompare(a.id));
+      return list;
+    }
+    return null;
+  } catch (err) {
+    console.warn('Failed to fetch news from Firestore:', err);
+    return null;
+  }
+}
+
+export async function saveNewsToFirestore(
+  article: NewsArticle
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const sanitized = sanitizeForFirestore(article);
+    await setDoc(doc(db, 'news', article.id), sanitized, { merge: true });
+    return {
+      success: true,
+      message: 'নিউজ সফলভাবে ক্লাউড ডাটাবেজে সংরক্ষিত হয়েছে এবং সব ভিজিটরের জন্য লাইভ হয়েছে!',
+    };
+  } catch (err: any) {
+    console.error('saveNewsToFirestore error:', err);
+    return {
+      success: false,
+      message: 'নিউজ সংরক্ষণ ব্যর্থ: ' + (err?.message || 'Firestore error'),
+    };
+  }
+}
+
+export async function updateNewsInFirestore(
+  id: string,
+  updates: Partial<NewsArticle>
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const sanitized = sanitizeForFirestore(updates);
+    await updateDoc(doc(db, 'news', id), sanitized);
+    return {
+      success: true,
+      message: 'নিউজ সফলভাবে ক্লাউডে আপডেট হয়েছে!',
+    };
+  } catch (err: any) {
+    console.error('updateNewsInFirestore error:', err);
+    return {
+      success: false,
+      message: 'নিউজ আপডেট ব্যর্থ: ' + (err?.message || 'Firestore error'),
+    };
+  }
+}
+
+export async function deleteNewsFromFirestore(
+  id: string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    await deleteDoc(doc(db, 'news', id));
+    return {
+      success: true,
+      message: 'নিউজ আর্টিকেল সফলভাবে ক্লাউড ডাটাবেজ থেকে মুছে ফেলা হয়েছে!',
+    };
+  } catch (err: any) {
+    console.error('deleteNewsFromFirestore error:', err);
+    return {
+      success: false,
+      message: 'নিউজ মুছতে ব্যর্থ: ' + (err?.message || 'Firestore error'),
+    };
+  }
+}
+
+export async function batchSyncNewsToFirestore(
+  articles: NewsArticle[]
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const batch = writeBatch(db);
+    articles.forEach((article) => {
+      const docRef = doc(db, 'news', article.id);
+      const sanitized = sanitizeForFirestore(article);
+      batch.set(docRef, sanitized, { merge: true });
+    });
+    await batch.commit();
+    return {
+      success: true,
+      message: `${articles.length} টি নিউজ আর্টিকেল সফলভাবে ক্লাউডে সিঙ্ক হয়েছে!`,
+    };
+  } catch (err: any) {
+    console.error('batchSyncNewsToFirestore error:', err);
+    return {
+      success: false,
+      message: 'ক্লাউড সিঙ্ক ব্যর্থ: ' + (err?.message || 'Firestore error'),
+    };
+  }
+}
+

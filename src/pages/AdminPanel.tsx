@@ -55,6 +55,7 @@ import {
   Loader2,
   RefreshCw,
   Cloud,
+  Newspaper,
 } from 'lucide-react';
 import { UserRole, PhotoItem, NewsArticle, VideoItem, TourEvent, Product, OrderItem, HomepageSettings, DistributionInquiry, User } from '../types';
 import { extractYouTubeId } from './Videos';
@@ -64,7 +65,7 @@ import { DeleteConfirmModal } from '../components/common/DeleteConfirmModal';
 import { HERO_STAGE_IMAGE, TRADITIONAL_PUNJABI_IMAGE, PORTRAIT_IMAGE, STUDIO_IMAGE } from '../data/seedData';
 
 interface AdminPanelProps {
-  onNavigate: (path: string) => void;
+  onNavigate: (path: string, param?: string) => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
@@ -97,8 +98,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     updateOrderStatus,
     deleteOrder,
     news,
+    newsLoading,
     addNewsArticle,
+    updateNewsArticle,
     deleteNewsArticle,
+    syncAllNewsToCloud,
     tourEvents,
     addTourEvent,
     deleteTourEvent,
@@ -223,17 +227,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     tags: '',
   });
 
-  const [showAddNews, setShowAddNews] = useState(false);
-  const [newNewsData, setNewNewsData] = useState({
-    title: '',
-    slug: '',
-    summary: '',
-    content: '',
-    coverImage: '',
-    category: 'Tour & Live',
-    author: 'Management Media Desk',
-    readTime: '3 min read',
-  });
+  // News & Press Releases Management State
+  const [showNewsModal, setShowNewsModal] = useState(false);
+  const [editingNewsItem, setEditingNewsItem] = useState<NewsArticle | null>(null);
+  const [newsNotice, setNewsNotice] = useState<string | null>(null);
+  const [newsSaving, setNewsSaving] = useState(false);
+  const [isNewsPhotoUploading, setIsNewsPhotoUploading] = useState(false);
+  const [newsSearch, setNewsSearch] = useState('');
+  const [newsCategoryFilter, setNewsCategoryFilter] = useState('all');
+  const [newsDeleteTarget, setNewsDeleteTarget] = useState<NewsArticle | null>(null);
+
+  // News Form fields
+  const [newsFormTitle, setNewsFormTitle] = useState('');
+  const [newsFormCategory, setNewsFormCategory] = useState('Tour & Live');
+  const [newsFormCoverImage, setNewsFormCoverImage] = useState('');
+  const [newsFormSummary, setNewsFormSummary] = useState('');
+  const [newsFormContent, setNewsFormContent] = useState('');
+  const [newsFormAuthor, setNewsFormAuthor] = useState('Rasel Babu Official Media');
+  const [newsFormReadTime, setNewsFormReadTime] = useState('3 min read');
+  const [newsFormTags, setNewsFormTags] = useState('');
 
   // Video Releases & YouTube Link Management
   const [editingVideoItem, setEditingVideoItem] = useState<VideoItem | null>(null);
@@ -917,33 +929,134 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleCreateNews = (e: React.FormEvent) => {
+  const handleOpenAddNews = () => {
+    setEditingNewsItem(null);
+    setNewsFormTitle('');
+    setNewsFormCategory('Tour & Live');
+    setNewsFormCoverImage(HERO_STAGE_IMAGE);
+    setNewsFormSummary('');
+    setNewsFormContent('');
+    setNewsFormAuthor('Rasel Babu Official Media');
+    setNewsFormReadTime('3 min read');
+    setNewsFormTags('');
+    setShowNewsModal(true);
+  };
+
+  const handleOpenEditNews = (item: NewsArticle) => {
+    setEditingNewsItem(item);
+    setNewsFormTitle(item.title);
+    setNewsFormCategory(item.category || 'Tour & Live');
+    setNewsFormCoverImage(item.coverImage || HERO_STAGE_IMAGE);
+    setNewsFormSummary(item.summary || '');
+    setNewsFormContent(item.content || '');
+    setNewsFormAuthor(item.author || 'Rasel Babu Official Media');
+    setNewsFormReadTime(item.readTime || '3 min read');
+    setNewsFormTags(item.tags ? item.tags.join(', ') : '');
+    setShowNewsModal(true);
+  };
+
+  const handleNewsPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsNewsPhotoUploading(true);
+    try {
+      const compressed = await compressImageFile(file, 1000, 0.75);
+      if (compressed) {
+        setNewsFormCoverImage(compressed);
+      }
+    } catch (err) {
+      console.error('Failed to compress news photo:', err);
+    } finally {
+      setIsNewsPhotoUploading(false);
+    }
+  };
+
+  const handleSaveNews = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newNewsData.title || !newNewsData.content) return;
+    const cleanTitle = newsFormTitle.trim();
+    if (!cleanTitle) {
+      alert('অনুগ্রহ করে খবরের শিরোনাম দিন (Please enter article headline)');
+      return;
+    }
+    if (!newsFormContent.trim()) {
+      alert('অনুগ্রহ করে বিস্তারিত খবর লিখুন (Please enter article content)');
+      return;
+    }
 
-    addNewsArticle({
-      title: newNewsData.title,
-      slug: newNewsData.slug || newNewsData.title.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-      summary: newNewsData.summary,
-      content: newNewsData.content,
-      coverImage: newNewsData.coverImage || HERO_STAGE_IMAGE,
-      category: newNewsData.category,
-      author: newNewsData.author,
-      readTime: newNewsData.readTime,
-      publishDate: new Date().toISOString().split('T')[0],
-    });
+    setNewsSaving(true);
+    const parsedTags = newsFormTags
+      ? newsFormTags.split(',').map((t) => t.trim()).filter(Boolean)
+      : undefined;
 
-    setNewNewsData({
-      title: '',
-      slug: '',
-      summary: '',
-      content: '',
-      coverImage: '',
-      category: 'Tour & Live',
-      author: 'Management Media Desk',
-      readTime: '3 min read',
-    });
-    setShowAddNews(false);
+    const safeCoverImage = newsFormCoverImage.trim() || HERO_STAGE_IMAGE;
+    const generatedSlug = cleanTitle.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 60);
+
+    try {
+      if (editingNewsItem) {
+        const res = await updateNewsArticle(editingNewsItem.id, {
+          title: cleanTitle,
+          slug: generatedSlug,
+          category: newsFormCategory,
+          coverImage: safeCoverImage,
+          summary: newsFormSummary.trim(),
+          content: newsFormContent.trim(),
+          author: newsFormAuthor.trim() || 'Rasel Babu Official Media',
+          readTime: newsFormReadTime.trim() || '3 min read',
+          tags: parsedTags,
+        });
+
+        if (res && res.success) {
+          setNewsNotice(`✅ নিউজ "${cleanTitle}" সফলভাবে আপডেট ও ক্লাউডে সংরক্ষিত হয়েছে!`);
+          setShowNewsModal(false);
+        } else {
+          setNewsNotice(`❌ নিউজ আপডেট ব্যর্থ: ${res?.message || 'Error updating news'}`);
+        }
+      } else {
+        const res = await addNewsArticle({
+          title: cleanTitle,
+          slug: generatedSlug,
+          category: newsFormCategory,
+          coverImage: safeCoverImage,
+          summary: newsFormSummary.trim(),
+          content: newsFormContent.trim(),
+          author: newsFormAuthor.trim() || 'Rasel Babu Official Media',
+          readTime: newsFormReadTime.trim() || '3 min read',
+          publishDate: new Date().toISOString().split('T')[0],
+          tags: parsedTags,
+        });
+
+        if (res && res.success) {
+          setNewsNotice(`✅ নতুন নিউজ "${cleanTitle}" সফলভাবে প্রকাশিত ও সেন্ট্রাল ক্লাউডে লাইভ হয়েছে!`);
+          setShowNewsModal(false);
+        } else {
+          setNewsNotice(`❌ নিউজ প্রকাশনা ব্যর্থ: ${res?.message || 'Error saving news'}`);
+        }
+      }
+    } catch (err: any) {
+      setNewsNotice(`❌ ত্রুটি: ${err?.message || 'Network error'}`);
+    } finally {
+      setNewsSaving(false);
+      setTimeout(() => setNewsNotice(null), 6000);
+    }
+  };
+
+  const [isSyncingNewsCloud, setIsSyncingNewsCloud] = useState(false);
+
+  const handleBatchSyncNews = async () => {
+    setIsSyncingNewsCloud(true);
+    try {
+      const res = await syncAllNewsToCloud();
+      if (res && res.success) {
+        setNewsNotice(`✅ ${res.message || 'সকল নিউজ গুগল ক্লাউড ফায়ারবেসে সফলভাবে সিঙ্ক হয়েছে!'}`);
+      } else {
+        setNewsNotice(`❌ ক্লাউড সিঙ্ক ব্যর্থ: ${res?.message || 'Error syncing news'}`);
+      }
+    } catch (err: any) {
+      setNewsNotice(`❌ সিঙ্ক ত্রুটি: ${err?.message || 'Network error'}`);
+    } finally {
+      setIsSyncingNewsCloud(false);
+      setTimeout(() => setNewsNotice(null), 6000);
+    }
   };
 
   const handleSendReply = (messageId: string) => {
@@ -1217,7 +1330,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
             <div className="p-3.5 rounded-2xl bg-zinc-950/90 border border-zinc-800 space-y-1.5 shadow-xl">
               <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold flex items-center justify-between">
                 <span>MAIN OPTIONS (মূল অপশনসমূহ)</span>
-                <span className="text-amber-400">9 SECTIONS</span>
+                <span className="text-amber-400">10 SECTIONS</span>
               </div>
 
               <nav className="space-y-1" aria-label="Admin Navigation">
@@ -1284,8 +1397,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                     badgeColor: 'bg-amber-400 text-black font-bold',
                   },
                   {
-                    id: 'distribution' as const,
+                    id: 'news' as const,
                     serial: '08',
+                    label: 'News & Press Releases',
+                    labelBn: 'প্রেস বিজ্ঞপ্তি ও নিউজ পাবলিশিং',
+                    icon: Newspaper,
+                    badge: news.length,
+                    badgeColor: 'bg-amber-400 text-black font-bold',
+                  },
+                  {
+                    id: 'distribution' as const,
+                    serial: '09',
                     label: 'FK Music Distribution',
                     labelBn: 'ওয়েবসাইট মেসেজ ও আবেদন',
                     icon: Disc,
@@ -1298,7 +1420,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                   },
                   {
                     id: 'monetization' as const,
-                    serial: '09',
+                    serial: '10',
                     label: 'Adsterra Monetization',
                     labelBn: 'বিজ্ঞাপন ও মনেটাইজেশন',
                     icon: DollarSign,
@@ -2836,80 +2958,458 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
         )}
 
 
-        {/* TAB 10: ARTICLES & TOUR EVENTS */}
+        {/* TAB 08: NEWS & PRESS RELEASES (লাইভ ক্লাউড ডাটাবেজ সিঙ্ক) */}
         {activeTab === 'news' && (
-          <div className="space-y-6">
-            {/* News & Announcements CRUD */}
-            <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-display text-xl font-bold text-white flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-pink-400" />
-                    <span>Articles & Press Releases ({news.length} total)</span>
-                  </h3>
-                  <p className="text-xs text-zinc-400">Publish news, announcements, and tour diaries.</p>
+          <div className="space-y-6 animate-fade-in">
+            {/* Real-time status notification */}
+            {newsNotice && (
+              <div
+                className={`p-4 rounded-2xl text-xs flex items-center justify-between gap-3 shadow-lg ${
+                  newsNotice.includes('❌')
+                    ? 'bg-red-950/80 border border-red-500/50 text-red-200'
+                    : 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-200'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  {newsNotice.includes('❌') ? (
+                    <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                  ) : (
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  )}
+                  <span className="font-medium">{newsNotice}</span>
                 </div>
                 <button
-                  onClick={() => setShowAddNews(!showAddNews)}
-                  className="px-3.5 py-1.5 rounded-lg bg-pink-600 text-white font-semibold text-xs flex items-center gap-1.5 hover:bg-pink-500 cursor-pointer"
+                  type="button"
+                  onClick={() => setNewsNotice(null)}
+                  className="text-zinc-400 hover:text-white p-1"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>{showAddNews ? 'Cancel' : 'Post Article'}</span>
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
+            )}
 
-              {showAddNews && (
-                <form onSubmit={handleCreateNews} className="p-4 bg-zinc-950 rounded-xl border border-zinc-800 space-y-3">
-                  <input
-                    type="text"
-                    required
-                    placeholder="Article Headline"
-                    value={newNewsData.title}
-                    onChange={(e) => setNewNewsData({ ...newNewsData, title: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Summary"
-                    value={newNewsData.summary}
-                    onChange={(e) => setNewNewsData({ ...newNewsData, summary: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white"
-                  />
-                  <textarea
-                    rows={4}
-                    required
-                    placeholder="Full article content..."
-                    value={newNewsData.content}
-                    onChange={(e) => setNewNewsData({ ...newNewsData, content: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white"
-                  />
+            {/* Header and Controls */}
+            <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6 sm:p-7 space-y-6 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+                <div>
+                  <h3 className="font-display text-2xl font-bold text-white flex flex-wrap items-center gap-2.5">
+                    <Newspaper className="w-6 h-6 text-amber-400" />
+                    <span>News &amp; Press Releases / নিউজ ও প্রেস পাবলিশিং</span>
+                    <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/30">
+                      {news.length} Articles
+                    </span>
+                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 font-medium">
+                      ● Live Sync: Cloud Firestore Active
+                    </span>
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                    ডিভাইস থেকে ছবি আপলোড করে নতুন খবর ও প্রেস বিজ্ঞপ্তি প্রকাশ করুন। অ্যাডমিন থেকে যেকোনো পোস্ট বা আপডেট করলে তাৎক্ষণিকভাবে ক্লাউড ফায়ারবেসে সেভ হবে এবং সব ভিজিটর ও ডিভাইসে লাইভ হবে।
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                   <button
-                    type="submit"
-                    className="px-4 py-2 bg-pink-600 text-white font-semibold rounded-lg text-xs"
+                    type="button"
+                    onClick={handleBatchSyncNews}
+                    disabled={isSyncingNewsCloud}
+                    className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                    title="সকল নিউজ ফায়ারবেসে ক্লাউড সিঙ্ক করুন"
                   >
-                    Publish Article
+                    <RefreshCw className={`w-3.5 h-3.5 text-amber-400 ${isSyncingNewsCloud ? 'animate-spin' : ''}`} />
+                    <span>{isSyncingNewsCloud ? 'Syncing...' : 'Sync Cloud'}</span>
                   </button>
-                </form>
-              )}
 
-              <div className="space-y-2">
-                {news.map((item) => (
-                  <div key={item.id} className="p-3 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-between text-xs">
-                    <div>
-                      <p className="font-semibold text-white">{item.title}</p>
-                      <p className="text-zinc-500 font-mono text-[10px]">{item.publishDate} · {item.category}</p>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddNews}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-black font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-400/20 transition-all cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-black" />
+                    <span>Post Article (নতুন নিউজ পোস্ট করুন)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Filter and Search Bar */}
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <div className="relative flex-1 w-full">
+                  <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="খবরের শিরোনাম বা বিষয় দিয়ে খুঁজুন..."
+                    value={newsSearch}
+                    onChange={(e) => setNewsSearch(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div className="w-full sm:w-auto">
+                  <select
+                    value={newsCategoryFilter}
+                    onChange={(e) => setNewsCategoryFilter(e.target.value)}
+                    className="w-full sm:w-48 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-amber-400"
+                  >
+                    <option value="all">সব ক্যাটাগরি (All Categories)</option>
+                    <option value="Tour & Live">Tour &amp; Live</option>
+                    <option value="Album Release">Album Release</option>
+                    <option value="Concert Tour">Concert Tour</option>
+                    <option value="Press Statement">Press Statement</option>
+                    <option value="Media & Interview">Media &amp; Interview</option>
+                    <option value="Special Milestone">Special Milestone</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Articles Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-2">
+                {news
+                  .filter((item) => {
+                    const matchesCategory =
+                      newsCategoryFilter === 'all' ||
+                      (item.category && item.category.toLowerCase() === newsCategoryFilter.toLowerCase());
+                    const matchesSearch =
+                      !newsSearch ||
+                      item.title.toLowerCase().includes(newsSearch.toLowerCase()) ||
+                      (item.summary && item.summary.toLowerCase().includes(newsSearch.toLowerCase())) ||
+                      (item.author && item.author.toLowerCase().includes(newsSearch.toLowerCase()));
+                    return matchesCategory && matchesSearch;
+                  })
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      className="group rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800/90 hover:border-amber-400/40 transition-all flex flex-col justify-between shadow-lg"
+                    >
+                      <div>
+                        {/* Cover image preview */}
+                        <div className="aspect-[16/10] overflow-hidden bg-zinc-900 relative">
+                          <img
+                            src={item.coverImage || HERO_STAGE_IMAGE}
+                            alt={item.title}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-md bg-black/80 font-mono text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+                            {item.category}
+                          </span>
+                          <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded bg-black/70 font-mono text-[9px] text-zinc-300">
+                            {item.readTime || '3 min'}
+                          </span>
+                        </div>
+
+                        {/* Text info */}
+                        <div className="p-4 space-y-2">
+                          <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-amber-400" />
+                              <span>{item.publishDate}</span>
+                            </span>
+                            <span>·</span>
+                            <span>By {item.author || 'Media Desk'}</span>
+                          </div>
+
+                          <h4 className="text-sm font-bold text-white line-clamp-2 leading-snug group-hover:text-amber-300 transition-colors">
+                            {item.title}
+                          </h4>
+
+                          <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
+                            {item.summary || item.content}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Card Action Buttons */}
+                      <div className="p-3 bg-zinc-900/60 border-t border-zinc-800/80 flex items-center justify-between gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onNavigate('/news-detail', item.id)}
+                          className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-amber-400 hover:text-black text-zinc-300 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                          title="লাইভ নিউজ পেজ ওপেন করুন"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>View Article</span>
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditNews(item)}
+                            className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-300 text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                            title="Edit article"
+                          >
+                            <Edit className="w-3 h-3 text-amber-400" />
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeleteConfirmModal({
+                                isOpen: true,
+                                title: 'Delete News Article',
+                                titleBn: 'নিউজ আর্টিকেল ডিলিট নিশ্চিতকরণ',
+                                itemName: item.title,
+                                message: 'আপনি কি নিশ্চিত যে এই নিউজ আর্টিকেলটি ওয়েবসাইট ও ক্লাউড ডাটাবেজ থেকে সম্পূর্ণ মুছে ফেলতে চান?',
+                                onConfirm: async () => {
+                                  const res = await deleteNewsArticle(item.id);
+                                  if (res && res.success) {
+                                    setNewsNotice(`✅ নিউজ আর্টিকেল "${item.title}" সফলভাবে মুছে ফেলা হয়েছে!`);
+                                    setTimeout(() => setNewsNotice(null), 4000);
+                                  } else {
+                                    setNewsNotice(`❌ নিউজ মুছতে ব্যর্থ: ${res?.message || 'Error deleting news'}`);
+                                  }
+                                },
+                              });
+                            }}
+                            className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-red-950 text-zinc-400 hover:text-red-400 transition-colors cursor-pointer"
+                            title="Delete article"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {news.length === 0 && (
+                <div className="py-12 text-center space-y-3 rounded-2xl bg-zinc-950 border border-zinc-800">
+                  <Newspaper className="w-8 h-8 text-zinc-600 mx-auto" />
+                  <p className="text-xs text-zinc-400">বর্তমানে কোনো নিউজ প্রকাশিত হয়নি।</p>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddNews}
+                    className="px-4 py-2 rounded-xl bg-amber-400 text-black font-bold text-xs cursor-pointer"
+                  >
+                    প্রথম নিউজ আর্টিকেল পোস্ট করুন
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Comprehensive News Post / Edit Modal */}
+            {showNewsModal && (
+              <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in">
+                <div className="relative w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl my-8">
+                  {/* Modal Header */}
+                  <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/60">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400">
+                        {editingNewsItem ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      </div>
+                      <div>
+                        <h3 className="font-display text-base font-bold text-white">
+                          {editingNewsItem ? 'Edit News Article (নিউজ এডিট করুন)' : 'Post New News Article (নতুন নিউজ পোস্ট করুন)'}
+                        </h3>
+                        <p className="text-[11px] text-zinc-400 font-mono">
+                          Auto-persisted to Cloud Firestore &amp; live across all devices
+                        </p>
+                      </div>
                     </div>
                     <button
-                      onClick={() => deleteNewsArticle(item.id)}
-                      className="p-1 text-zinc-500 hover:text-red-400"
-                      title="Delete article"
+                      type="button"
+                      onClick={() => setShowNewsModal(false)}
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
-                ))}
+
+                  {/* Form */}
+                  <form onSubmit={handleSaveNews} className="p-6 space-y-4">
+                    {/* Title */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Article Headline (খবরের শিরোনাম) <span className="text-amber-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="যেমন: কুড়িগ্রাম কনসার্টে রাসেল বাবুর স্মরণীয় একক পরিবেশনা"
+                        value={newsFormTitle}
+                        onChange={(e) => setNewsFormTitle(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                      />
+                    </div>
+
+                    {/* Category & Read Time Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-zinc-300">Category (ক্যাটাগরি)</label>
+                        <select
+                          value={newsFormCategory}
+                          onChange={(e) => setNewsFormCategory(e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                        >
+                          <option value="Tour & Live">Tour &amp; Live (ট্যুর ও লাইভ)</option>
+                          <option value="Album Release">Album Release (নতুন গান ও অ্যালবাম)</option>
+                          <option value="Concert Tour">Concert Tour (কনসার্ট ট্যুর)</option>
+                          <option value="Press Statement">Press Statement (প্রেস বিজ্ঞপ্তি)</option>
+                          <option value="Media & Interview">Media &amp; Interview (সাক্ষাৎকার ও গণমাধ্যম)</option>
+                          <option value="Special Milestone">Special Milestone (বিশেষ অর্জন ও সম্মাননা)</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-zinc-300">Read Time (পড়ার সময়)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 3 min read"
+                          value={newsFormReadTime}
+                          onChange={(e) => setNewsFormReadTime(e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Photo Upload & Preview */}
+                    <div className="space-y-2 p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                          <Camera className="w-4 h-4 text-amber-400" />
+                          <span>Cover Photo (নিউজ কাভার ফটো)</span>
+                        </label>
+                        {isNewsPhotoUploading && (
+                          <span className="text-[10px] font-mono text-amber-400 flex items-center gap-1">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Compressing photo...</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Photo Actions: Upload from device or Direct URL */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                        <div>
+                          <label className="block w-full py-2.5 px-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-dashed border-amber-400/50 text-center cursor-pointer transition-colors text-xs text-amber-300 font-medium">
+                            <Upload className="w-4 h-4 mx-auto mb-1 text-amber-400" />
+                            <span>ডিভাইস থেকে ছবি আপলোড করুন</span>
+                            <span className="block text-[10px] text-zinc-500 font-mono mt-0.5">JPG / PNG / WEBP</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleNewsPhotoUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-mono text-zinc-400">অথবা ছবির সরাসরি URL:</span>
+                          <input
+                            type="text"
+                            placeholder="https://... অথবা /assets/..."
+                            value={newsFormCoverImage}
+                            onChange={(e) => setNewsFormCoverImage(e.target.value)}
+                            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-400"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Live Image Preview */}
+                      {newsFormCoverImage && (
+                        <div className="pt-2 flex items-center gap-3">
+                          <div className="w-24 h-16 rounded-xl overflow-hidden bg-zinc-950 border border-zinc-700 shrink-0 relative">
+                            <img
+                              src={newsFormCoverImage}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="text-[11px] text-zinc-400">
+                            <span className="text-emerald-400 font-semibold block">✓ প্রিভিউ প্রস্তুত</span>
+                            <span className="text-[10px] text-zinc-500 font-mono truncate max-w-xs block">
+                              সব ডিভাইস ও ব্রাউজারে নিখুঁতভাবে প্রদর্শিত হবে
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Summary / Lead */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Lead Summary (সংক্ষিপ্ত মূল সারাংশ)
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder="খবরের প্রথম ২টি প্রধান লাইন বা আকর্ষণীয় সারাংশ লিখুন..."
+                        value={newsFormSummary}
+                        onChange={(e) => setNewsFormSummary(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+                      />
+                    </div>
+
+                    {/* Full Content */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Full Article Content (বিস্তারিত খবর ও প্রতিবেদন) <span className="text-amber-400">*</span>
+                      </label>
+                      <textarea
+                        rows={6}
+                        required
+                        placeholder="সম্পূর্ণ খবর এখানে লিখুন। প্যারাগ্রাফ করার জন্য এন্টার দিয়ে নতুন লাইন শুরু করুন..."
+                        value={newsFormContent}
+                        onChange={(e) => setNewsFormContent(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400 font-sans leading-relaxed"
+                      />
+                    </div>
+
+                    {/* Author & Tags */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-zinc-300">Author / Reporter (প্রতিবেদক / প্রেস ডেস্ক)</label>
+                        <input
+                          type="text"
+                          placeholder="Rasel Babu Official Media"
+                          value={newsFormAuthor}
+                          onChange={(e) => setNewsFormAuthor(e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-zinc-300">Tags (ট্যাগসমূহ - কমা দিয়ে লিখুন)</label>
+                        <input
+                          type="text"
+                          placeholder="Concert, Live, Dhaka, 2026"
+                          value={newsFormTags}
+                          onChange={(e) => setNewsFormTags(e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Footer buttons */}
+                    <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-zinc-800">
+                      <button
+                        type="button"
+                        onClick={() => setShowNewsModal(false)}
+                        className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-semibold transition-colors cursor-pointer"
+                      >
+                        বাতিল (Cancel)
+                      </button>
+
+                      <button
+                        type="submit"
+                        disabled={newsSaving || isNewsPhotoUploading}
+                        className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-black font-bold text-xs flex items-center gap-2 shadow-md shadow-amber-400/20 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {newsSaving ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-black" />
+                            <span>সংরক্ষণ হচ্ছে...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-black" />
+                            <span>{editingNewsItem ? 'নিউজ আপডেট করুন' : 'নিউজ প্রকাশ ও লাইভ সিঙ্ক করুন'}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 

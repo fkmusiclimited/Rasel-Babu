@@ -91,6 +91,7 @@ export interface NewsArticle {
   category: string;
   author: string;
   readTime: string;
+  tags?: string[];
 }
 
 export interface TourEvent {
