@@ -19,11 +19,104 @@ jobs:
           script: |
             set -e
             cd /home/raselbabu/htdocs/raselbabu.com
+
+            echo "=========================================================="
+            echo " [1/8] Inspecting VPS Git status and local changes"
+            echo "=========================================================="
+            git status
+
+            if git status --porcelain | grep -q "server.ts"; then
+              echo "--- Detected local modifications in server.ts ---"
+              git diff server.ts || true
+            else
+              echo "server.ts has no uncommitted diff in index, checking working tree..."
+            fi
+
+            echo "=========================================================="
+            echo " [2/8] Creating safe timestamped backup of server.ts & files"
+            echo "=========================================================="
+            TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+            if [ -f server.ts ]; then
+              cp -p server.ts "server.ts.vps.backup_${TIMESTAMP}"
+              cp -p server.ts "server.ts.vps.latest"
+              echo "Safely backed up server.ts -> server.ts.vps.backup_${TIMESTAMP}"
+            fi
+
+            echo "=========================================================="
+            echo " [3/8] Preserving local changes safely in Git stash"
+            echo "=========================================================="
+            git config user.name "VPS Deploy Reconciler" || true
+            git config user.email "deploy@raselbabu.com" || true
+
+            if [ -n "$(git status --porcelain)" ]; then
+              echo "Saving local modifications to git stash..."
+              git stash push -u -m "VPS local changes backup before deploy ${TIMESTAMP}" || true
+            fi
+
+            echo "=========================================================="
+            echo " [4/8] Safely reconciling local branch with origin/main"
+            echo "=========================================================="
             git remote set-url origin https://github.com/fkmusiclimited/Rasel-Babu.git
-            git pull origin main
+            git fetch origin main
+
+            CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+            if [ "$CURRENT_BRANCH" != "main" ]; then
+              git checkout main 2>/dev/null || git checkout -b main origin/main
+            fi
+
+            if ! git merge origin/main --no-edit; then
+              echo "Reconciling merge conflicts safely with origin/main..."
+              git checkout --theirs . || true
+              git add -A
+              git commit -m "chore: safe merge reconciliation with origin/main [${TIMESTAMP}]" || true
+            fi
+
+            if [ -f server.ts.vps.latest ]; then
+              echo "--- VPS custom server.ts diff against pulled version (for audit) ---"
+              diff -u server.ts server.ts.vps.latest || true
+            fi
+
+            echo "=========================================================="
+            echo " [5/8] Installing dependencies"
+            echo "=========================================================="
             npm install --force
+
+            echo "=========================================================="
+            echo " [6/8] Building client app with Vite"
+            echo "=========================================================="
             npm run build
-            fuser -k 3001/tcp || true
-            nohup npm start > app.log 2>&1 &
-            sleep 3
-            curl -fsS http://127.0.0.1:3001 >/dev/null
+
+            echo "=========================================================="
+            echo " [7/8] Stopping previous instance and restarting on port 3001"
+            echo "=========================================================="
+            fuser -k 3001/tcp 2>/dev/null || true
+            PID_3001=$(lsof -ti:3001 2>/dev/null || true)
+            if [ -n "$PID_3001" ]; then
+              echo "Terminating process $PID_3001 on port 3001..."
+              kill -9 $PID_3001 2>/dev/null || true
+            fi
+            sleep 1
+
+            echo "Starting app with PORT=3001 NODE_ENV=production..."
+            PORT=3001 NODE_ENV=production nohup npm start > app.log 2>&1 &
+
+            echo "=========================================================="
+            echo " [8/8] Verifying website health on http://127.0.0.1:3001"
+            echo "=========================================================="
+            SERVER_OK=false
+            for i in $(seq 1 15); do
+              sleep 2
+              if curl -fsS http://127.0.0.1:3001 >/dev/null 2>&1; then
+                echo "SUCCESS: Website is live and responding on port 3001! (verified on attempt $i)"
+                SERVER_OK=true
+                break
+              fi
+              echo "Waiting for server to become ready ($i/15)..."
+            done
+
+            if [ "$SERVER_OK" != "true" ]; then
+              echo "ERROR: Server did not respond with 200 on port 3001 within 30 seconds."
+              echo "=== Last 50 lines of app.log ==="
+              tail -n 50 app.log || true
+              exit 1
+            fi

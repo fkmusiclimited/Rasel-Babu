@@ -8,7 +8,7 @@ import { createServer as createViteServer } from 'vite';
 dotenv.config();
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || (process.env.NODE_ENV === 'production' ? 3001 : 3000);
 const SESSION_SECRET = process.env.SESSION_SECRET || 'raselbabu_secure_session_secret_2025_artist_portal';
 const DATA_DIR = path.resolve('.data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
