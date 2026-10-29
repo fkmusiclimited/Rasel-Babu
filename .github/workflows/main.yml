@@ -64,7 +64,7 @@ jobs:
               git checkout main 2>/dev/null || git checkout -b main origin/main
             fi
 
-            if ! git merge origin/main --no-edit; then
+            if ! git merge origin/main --no-edit --allow-unrelated-histories; then
               echo "Reconciling merge conflicts safely with origin/main..."
               git checkout --theirs . || true
               git add -A
@@ -79,7 +79,7 @@ jobs:
             echo "=========================================================="
             echo " [5/8] Installing dependencies"
             echo "=========================================================="
-            npm install --force
+            npm install --include=dev --force
 
             echo "=========================================================="
             echo " [6/8] Building client app with Vite"
@@ -95,10 +95,11 @@ jobs:
               echo "Terminating process $PID_3001 on port 3001..."
               kill -9 $PID_3001 2>/dev/null || true
             fi
+            pkill -f "tsx server.ts" 2>/dev/null || true
             sleep 1
 
             echo "Starting app with PORT=3001 NODE_ENV=production..."
-            PORT=3001 NODE_ENV=production nohup npm start > app.log 2>&1 &
+            PORT=3001 NODE_ENV=production nohup npm start < /dev/null > app.log 2>&1 &
 
             echo "=========================================================="
             echo " [8/8] Verifying website health on http://127.0.0.1:3001"

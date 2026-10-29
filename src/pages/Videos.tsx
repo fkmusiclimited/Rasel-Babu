@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { AdSlot } from '../components/ads/AdSlot';
-import { Play, Youtube, Eye, Calendar, X, Edit, Plus, Check, Link, Sparkles } from 'lucide-react';
+import { Play, Youtube, Eye, Calendar, X, Edit, Plus, Check, Link, Sparkles, Share2 } from 'lucide-react';
 import { VideoItem } from '../types';
 
 export function extractYouTubeId(urlOrId: string): string {
@@ -12,12 +12,54 @@ export function extractYouTubeId(urlOrId: string): string {
   return match ? match[1] : trimmed;
 }
 
-export const Videos: React.FC = () => {
+interface VideosProps {
+  videoId?: string;
+  onNavigate?: (path: string, param?: string) => void;
+}
+
+export const Videos: React.FC<VideosProps> = ({ videoId, onNavigate }) => {
   const { videos, addVideo, updateVideo, deleteVideo } = useData();
   const { isAdminOrManager } = useAuth();
   
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activeVideoModal, setActiveVideoModal] = useState<VideoItem | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (videoId && videos.length > 0) {
+      const match = videos.find((v) => v.id === videoId);
+      if (match) {
+        setActiveVideoModal(match);
+        document.title = `${match.title} | Rasel Babu Official Videos`;
+      }
+    }
+  }, [videoId, videos]);
+
+  const handleShareVideo = async (video: VideoItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const shareUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/?video=${encodeURIComponent(video.id)}`
+      : `https://raselbabu.com/?video=${encodeURIComponent(video.id)}`;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopiedId(video.id);
+      setTimeout(() => setCopiedId(null), 2500);
+    } catch {
+      // fallback
+    }
+  };
 
   // Edit Video Modal state
   const [editingVideo, setEditingVideo] = useState<VideoItem | null>(null);
@@ -227,6 +269,23 @@ export const Videos: React.FC = () => {
                         <span>Edit Link</span>
                       </button>
                     )}
+                    <button
+                      onClick={(e) => handleShareVideo(video, e)}
+                      title="Share Video Link"
+                      className="text-zinc-400 hover:text-amber-400 text-xs flex items-center gap-1 cursor-pointer font-medium transition-colors"
+                    >
+                      {copiedId === video.id ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="w-3.5 h-3.5" />
+                          <span>Share</span>
+                        </>
+                      )}
+                    </button>
                     <button
                       onClick={() => setActiveVideoModal(video)}
                       className="text-amber-400 hover:underline flex items-center gap-1 cursor-pointer font-medium"
@@ -444,12 +503,30 @@ export const Videos: React.FC = () => {
                 <h3 className="text-base font-bold text-white truncate pr-4">
                   {activeVideoModal.title}
                 </h3>
-                <button
-                  onClick={() => setActiveVideoModal(null)}
-                  className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleShareVideo(activeVideoModal)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-amber-400 text-xs text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                  >
+                    {copiedId === activeVideoModal.id ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-emerald-400">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Share Video</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveVideoModal(null)}
+                    className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-zinc-800">

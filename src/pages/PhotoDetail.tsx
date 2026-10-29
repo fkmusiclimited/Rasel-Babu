@@ -18,7 +18,10 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({ photoId, onNavigate })
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [photoId]);
+    if (currentPhoto) {
+      document.title = `${currentPhoto.title} | Rasel Babu Official Gallery`;
+    }
+  }, [photoId, currentPhoto]);
 
   if (!currentPhoto) {
     return (

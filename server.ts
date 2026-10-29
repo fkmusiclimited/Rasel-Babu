@@ -1377,6 +1377,170 @@ const INITIAL_NEWS_FALLBACK = [
   },
 ];
 
+const INITIAL_PHOTOS_FALLBACK = [
+  {
+    id: 'photo-1',
+    title: 'Dhaka Grand Arena Symphony Live',
+    category: 'concert',
+    imageUrl: '/assets/images/hero_rasel_babu_stage_1791912890551.jpg',
+    caption: 'Rasel Babu headlining in front of 15,000 passionate music lovers at the Army Stadium Festival.',
+    date: '2025-11-20',
+    location: 'Dhaka Army Stadium, Bangladesh',
+  },
+  {
+    id: 'photo-2',
+    title: 'Acoustic Studio Recording - Neelmey Gaan',
+    category: 'studio',
+    imageUrl: '/assets/images/rasel_babu_studio_1791912892306.jpg',
+    caption: 'Tracking live acoustic guitar and vocal harmonies during the recording sessions for the new album.',
+    date: '2025-09-14',
+    location: 'Acoustica Soundworks, Banani',
+  },
+  {
+    id: 'photo-3',
+    title: 'Editorial Portrait - Modern Black Velvet',
+    category: 'portrait',
+    imageUrl: '/assets/images/rasel_babu_portrait_1791912893579.jpg',
+    caption: 'Exclusive celebrity studio portrait featuring Rasel Babu in a custom hand-embroidered black velvet bandhgala jacket.',
+    date: '2025-10-05',
+    location: 'Gulshan Photography Studio',
+  },
+  {
+    id: 'photo-4',
+    title: 'Unplugged Acoustic Guitar Live Session',
+    category: 'concert',
+    imageUrl: '/assets/images/rasel_babu_acoustic_live_1791914988781.jpg',
+    caption: 'Rasel Babu performing soulful acoustic ballads live on stage with vintage microphone and acoustic guitar in Dhaka.',
+    date: '2025-08-22',
+    location: 'National Theatre Hall, Shilpakala',
+  },
+  {
+    id: 'photo-5',
+    title: 'Bengali Royal Heritage Portrait',
+    category: 'cultural',
+    imageUrl: '/assets/images/rasel_babu_traditional_punjabi_1791914989705.jpg',
+    caption: 'Rasel Babu celebrating timeless Bengali cultural elegance in a royal dark navy and gold embroidered Punjabi kurta.',
+    date: '2025-07-15',
+    location: 'Heritage Studio, Old Dhaka',
+  },
+  {
+    id: 'photo-6',
+    title: 'Stadium Mega Concert Crowd & Gold Confetti',
+    category: 'concert',
+    imageUrl: '/assets/images/rasel_babu_fan_concert_1791914990421.jpg',
+    caption: 'Rasel Babu walking down the concert runway as thousands of fans raise lights and gold confetti rains over the stadium.',
+    date: '2025-12-05',
+    location: 'MA Aziz Stadium, Chittagong',
+  },
+  {
+    id: 'photo-7',
+    title: 'National Music Honors - Best Vocalist Gala',
+    category: 'portrait',
+    imageUrl: '/assets/images/rasel_babu_award_gala_1791914990162.jpg',
+    caption: 'Rasel Babu holding the prestigious Music Awards Trophy for Best Contemporary Male Vocalist on the celebrity red carpet.',
+    date: '2025-10-30',
+    location: 'Bangabandhu International Conference Centre',
+  },
+  {
+    id: 'photo-8',
+    title: 'Traditional Folk Heritage Melody Session',
+    category: 'cultural',
+    imageUrl: '/assets/images/rasel_babu_traditional_1791912894819.jpg',
+    caption: 'Traditional acoustic folk session celebrating authentic Baul and Bhatiyali melodies with vintage instruments.',
+    date: '2025-06-18',
+    location: 'Shilpakala Academy, Dhaka',
+  },
+];
+
+const INITIAL_PRODUCTS_FALLBACK = [
+  {
+    id: 'prod-1',
+    title: 'Rasel Babu Official Stage Tour T-Shirt',
+    price: 1500,
+    offerPrice: 1250,
+    currency: 'BDT',
+    category: 'merch',
+    imageUrl: '/assets/images/rasel_babu_portrait_1791912893579.jpg',
+    description: '100% premium combed organic cotton tour t-shirt featuring Rasel Babu golden insignia and official 2026 concert dates on back.',
+  },
+  {
+    id: 'prod-dress-1',
+    title: 'Rasel Babu Exclusive Traditional Three-Piece Set (থ্রি-পিস কালেকশন)',
+    price: 3800,
+    offerPrice: 3200,
+    currency: 'BDT',
+    category: 'dress',
+    imageUrl: '/assets/images/rasel_babu_traditional_punjabi_1791914989705.jpg',
+    description: 'Exclusive designer three-piece collection crafted from pure cotton georgette with fine embroidery work, matching salwar, and luxury chiffon orna.',
+  },
+  {
+    id: 'prod-dress-2',
+    title: 'Royal Navy & Gold Embroidered Heritage Punjabi (আর্টিস্ট পাঞ্জাবি)',
+    price: 4800,
+    offerPrice: 3950,
+    currency: 'BDT',
+    category: 'dress',
+    imageUrl: '/assets/images/rasel_babu_traditional_punjabi_1791914989705.jpg',
+    description: 'Handcrafted royal navy linen kurta with intricate golden zari threadwork inspired by Rasel Babu heritage concerts. Includes pajama.',
+  },
+  {
+    id: 'prod-2',
+    title: 'Limited Edition "Shonar Sure" Vinyl Record (স্বাক্ষরিত ভিনাইল)',
+    price: 3200,
+    currency: 'BDT',
+    category: 'music',
+    imageUrl: '/assets/images/album_cover_melodies_1791912892563.jpg',
+    description: 'Heavyweight 180-gram audiophile vinyl pressed in Europe with hand-numbered gatefold packaging and artist autograph.',
+  },
+];
+
+const INITIAL_VIDEOS_FALLBACK = [
+  {
+    id: 'video-1',
+    title: 'Rasel Babu - Shonar Bangla Tomar Sure (Official 4K Music Video)',
+    youtubeId: 'dQw4w9WgXcQ',
+    category: 'Music Video',
+    thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+    duration: '04:22',
+    description: 'Official music video shot across the picturesque tea estates and riverbanks of Bangladesh. Directed by Shakil Ahmed.',
+    releaseDate: 'November 2025',
+    views: '1.8M',
+  },
+  {
+    id: 'video-2',
+    title: 'Rasel Babu - Live Acoustic Session at Dhaka Studio Pavilion',
+    youtubeId: 'kJQP7kiw5Fk',
+    category: 'Acoustic Session',
+    thumbnailUrl: 'https://img.youtube.com/vi/kJQP7kiw5Fk/hqdefault.jpg',
+    duration: '07:15',
+    description: 'An unplugged acoustic medley featuring Rasel Babu on vocals, dotara, and acoustic nylon guitar.',
+    releaseDate: 'October 2025',
+    views: '940K',
+  },
+  {
+    id: 'video-3',
+    title: 'National Stadium Mega Concert Live Performance Highlight',
+    youtubeId: 'fJ9rUzIMcZQ',
+    category: 'Live Performance',
+    thumbnailUrl: 'https://img.youtube.com/vi/fJ9rUzIMcZQ/hqdefault.jpg',
+    duration: '12:40',
+    description: 'Electric atmosphere with thousands of fans singing every lyric in unison under fireworks and stadium spotlights.',
+    releaseDate: 'August 2025',
+    views: '2.4M',
+  },
+  {
+    id: 'video-4',
+    title: 'Studio Diaries: Making of "Moner Canvas"',
+    youtubeId: '3JZ_D3ELwOQ',
+    category: 'Behind The Scenes',
+    thumbnailUrl: 'https://img.youtube.com/vi/3JZ_D3ELwOQ/hqdefault.jpg',
+    duration: '05:50',
+    description: 'Go behind the mixing console with Rasel Babu and sound engineers crafting the vocal harmonies.',
+    releaseDate: 'July 2025',
+    views: '410K',
+  },
+];
+
 function readNews(): any[] {
   try {
     if (fs.existsSync(NEWS_FILE)) {
@@ -1428,7 +1592,7 @@ function readProducts(): any[] {
     }
   } catch {}
 
-  return [];
+  return INITIAL_PRODUCTS_FALLBACK;
 }
 
 function readPhotos(): any[] {
@@ -1455,7 +1619,34 @@ function readPhotos(): any[] {
     }
   } catch {}
 
-  return [];
+  return INITIAL_PHOTOS_FALLBACK;
+}
+
+function readVideos(): any[] {
+  try {
+    if (fs.existsSync(VIDEOS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(VIDEOS_FILE, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
+
+  try {
+    const pub = path.resolve('public', 'videos.json');
+    if (fs.existsSync(pub)) {
+      const data = JSON.parse(fs.readFileSync(pub, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
+
+  try {
+    const dist = path.resolve('dist', 'videos.json');
+    if (fs.existsSync(dist)) {
+      const data = JSON.parse(fs.readFileSync(dist, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
+
+  return INITIAL_VIDEOS_FALLBACK;
 }
 
 function readSettings(): any {
@@ -1503,7 +1694,7 @@ function getCanonicalBaseUrl(req: express.Request): string {
 
 function makeAbsoluteImageUrl(
   imgUrl: string | undefined,
-  type: 'news' | 'product' | 'photo' | 'home',
+  type: 'news' | 'product' | 'photo' | 'video' | 'home',
   id: string,
   baseUrl: string
 ): string {
@@ -1516,7 +1707,7 @@ function makeAbsoluteImageUrl(
     return `${baseUrl}/api/og-image?type=${type}&id=${encodeURIComponent(id)}`;
   }
 
-  // Full external URL
+  // Full external URL (e.g. YouTube thumbnails or CDN URLs)
   if (imgUrl.startsWith('https://') || imgUrl.startsWith('http://')) {
     return imgUrl.replace(/^http:\/\//i, 'https://');
   }
@@ -1535,8 +1726,8 @@ interface ResolvedMetadata {
   description: string;
   imageUrl: string;
   url: string;
-  type: 'website' | 'article' | 'product';
-  itemType: 'news' | 'product' | 'photo' | 'home';
+  type: 'website' | 'article' | 'product' | 'video.other';
+  itemType: 'news' | 'product' | 'photo' | 'video' | 'home';
   item?: any;
 }
 
@@ -1547,6 +1738,7 @@ function resolveMetadataForRequest(req: express.Request): ResolvedMetadata {
   const qArticle = req.query.article ? String(req.query.article).trim() : null;
   const qProduct = req.query.product ? String(req.query.product).trim() : null;
   const qPhoto = req.query.photo ? String(req.query.photo).trim() : null;
+  const qVideo = req.query.video ? String(req.query.video).trim() : null;
   const qId = req.query.id ? String(req.query.id).trim() : null;
 
   // 1. Check News Article (?news=id, ?article=id, /news-detail?news=id, /news/:id, /news?id=id)
@@ -1665,7 +1857,48 @@ function resolveMetadataForRequest(req: express.Request): ResolvedMetadata {
     }
   }
 
-  // 4. Default Homepage & General Pages (Preserving Rasel Babu's main hero photo)
+  // 4. Check Video Releases (?video=id, /videos?video=id, /video/:id, /videos/:id)
+  let videoId = qVideo;
+  if (!videoId && (pathName === '/videos' || pathName === '/video') && qId) {
+    videoId = qId;
+  } else if (!videoId && pathName.startsWith('/videos/')) {
+    videoId = pathName.replace('/videos/', '');
+  } else if (!videoId && pathName.startsWith('/video/') && pathName !== '/video') {
+    videoId = pathName.replace('/video/', '');
+  }
+
+  if (videoId) {
+    try {
+      videoId = decodeURIComponent(videoId);
+    } catch {}
+    const allVideos = readVideos();
+    const video = allVideos.find(
+      (v: any) =>
+        String(v.id).trim().toLowerCase() === videoId!.toLowerCase() ||
+        (v.youtubeId && String(v.youtubeId).trim() === videoId)
+    );
+    if (video) {
+      const exactTitle = video.title;
+      const pageTitle = `${video.title} | Rasel Babu Official Videos`;
+      const description = video.description || 'Watch official music video by Rasel Babu.';
+      const ytThumb = video.youtubeId ? `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg` : '';
+      const imageUrl = makeAbsoluteImageUrl(video.thumbnailUrl || ytThumb, 'video', video.id, baseUrl);
+      const url = `${baseUrl}/?video=${encodeURIComponent(video.id)}`;
+
+      return {
+        title: pageTitle,
+        ogTitle: exactTitle,
+        description,
+        imageUrl,
+        url,
+        type: 'video.other',
+        itemType: 'video',
+        item: video,
+      };
+    }
+  }
+
+  // 5. Default Homepage & General Pages (Preserving Rasel Babu's main hero photo)
   const defaultTitle = 'Rasel Babu | Official Artist Website & Music Portal';
   const defaultDescription =
     'Official artist portal, music discography, photo gallery, tour updates, and booking for Bangladeshi singer and performer Rasel Babu.';
@@ -1738,6 +1971,22 @@ function injectMetadata(html: string, meta: ResolvedMetadata): string {
     }
   }
 
+  if (meta.itemType === 'video' && meta.item && meta.item.youtubeId) {
+    ogTags['og:video'] = `https://www.youtube.com/watch?v=${meta.item.youtubeId}`;
+    ogTags['og:video:secure_url'] = `https://www.youtube.com/embed/${meta.item.youtubeId}`;
+    ogTags['og:video:type'] = 'text/html';
+    ogTags['og:video:width'] = '1280';
+    ogTags['og:video:height'] = '720';
+  }
+
+  if (meta.itemType === 'product' && meta.item) {
+    const priceVal = meta.item.offerPrice || meta.item.price;
+    if (typeof priceVal === 'number') {
+      ogTags['product:price:amount'] = String(priceVal);
+      ogTags['product:price:currency'] = meta.item.currency || 'BDT';
+    }
+  }
+
   for (const [prop, val] of Object.entries(ogTags)) {
     const reg = new RegExp(`<meta\\s+property=["']${prop}["'][^>]*>`, 'i');
     if (reg.test(html)) {
@@ -1764,7 +2013,7 @@ function injectMetadata(html: string, meta: ResolvedMetadata): string {
     }
   }
 
-  // 6. Schema.org JSON-LD structured data for News articles
+  // 6. Schema.org JSON-LD structured data
   if (meta.itemType === 'news' && meta.item) {
     const jsonLd = {
       '@context': 'https://schema.org',
@@ -1789,6 +2038,46 @@ function injectMetadata(html: string, meta: ResolvedMetadata): string {
         '@type': 'WebPage',
         '@id': safeUrl,
       },
+    };
+
+    const jsonLdScript = `<script type="application/ld+json">\n${JSON.stringify(jsonLd, null, 2)}\n</script>`;
+    if (/<script\s+type=["']application\/ld\+json["']>[\s\S]*?<\/script>/i.test(html)) {
+      html = html.replace(/<script\s+type=["']application\/ld\+json["']>[\s\S]*?<\/script>/i, jsonLdScript);
+    } else {
+      html = html.replace('</head>', `${jsonLdScript}\n</head>`);
+    }
+  } else if (meta.itemType === 'product' && meta.item) {
+    const priceVal = meta.item.offerPrice || meta.item.price || 0;
+    const jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: safeOgTitle,
+      description: safeDesc,
+      image: [safeImage],
+      offers: {
+        '@type': 'Offer',
+        price: priceVal,
+        priceCurrency: meta.item.currency || 'BDT',
+        availability: meta.item.inStock !== false ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      },
+    };
+
+    const jsonLdScript = `<script type="application/ld+json">\n${JSON.stringify(jsonLd, null, 2)}\n</script>`;
+    if (/<script\s+type=["']application\/ld\+json["']>[\s\S]*?<\/script>/i.test(html)) {
+      html = html.replace(/<script\s+type=["']application\/ld\+json["']>[\s\S]*?<\/script>/i, jsonLdScript);
+    } else {
+      html = html.replace('</head>', `${jsonLdScript}\n</head>`);
+    }
+  } else if (meta.itemType === 'video' && meta.item) {
+    const jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'VideoObject',
+      name: safeOgTitle,
+      description: safeDesc,
+      thumbnailUrl: [safeImage],
+      uploadDate: meta.item.releaseDate ? new Date(meta.item.releaseDate).toISOString() : new Date().toISOString(),
+      contentUrl: meta.item.youtubeId ? `https://www.youtube.com/watch?v=${meta.item.youtubeId}` : safeUrl,
+      embedUrl: meta.item.youtubeId ? `https://www.youtube.com/embed/${meta.item.youtubeId}` : safeUrl,
     };
 
     const jsonLdScript = `<script type="application/ld+json">\n${JSON.stringify(jsonLd, null, 2)}\n</script>`;
@@ -1830,9 +2119,11 @@ async function startServer() {
         req.query.article ||
         req.query.product ||
         req.query.photo ||
+        req.query.video ||
         req.path.startsWith('/news') ||
         req.path.startsWith('/product') ||
-        req.path.startsWith('/photo')
+        req.path.startsWith('/photo') ||
+        req.path.startsWith('/video')
       );
 
       if ((isCrawler || isContentShareLink) && req.method === 'GET' && !req.originalUrl.startsWith('/api/') && !req.originalUrl.includes('.')) {
@@ -1859,10 +2150,18 @@ async function startServer() {
     // Production Server-Side Pre-Rendering for crawlers and all visitors
     app.get('*', (req, res) => {
       const indexPath = path.join(distPath, 'index.html');
-      if (!fs.existsSync(indexPath)) {
-        return res.status(404).send('index.html not found in dist build');
+      let rawTemplate = '';
+      if (fs.existsSync(indexPath)) {
+        rawTemplate = fs.readFileSync(indexPath, 'utf-8');
+      } else {
+        const rootIndex = path.resolve('index.html');
+        if (fs.existsSync(rootIndex)) {
+          rawTemplate = fs.readFileSync(rootIndex, 'utf-8');
+        } else {
+          return res.status(404).send('index.html not found');
+        }
       }
-      const rawTemplate = fs.readFileSync(indexPath, 'utf-8');
+
       const meta = resolveMetadataForRequest(req);
       const finalHtml = injectMetadata(rawTemplate, meta);
       res.status(200).set({

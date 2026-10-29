@@ -48,6 +48,9 @@ const MainContent: React.FC = () => {
       if (urlParams.get('product') || window.location.pathname === '/product-detail') {
         return '/product-detail';
       }
+      if (urlParams.get('video') || window.location.pathname === '/videos') {
+        return '/videos';
+      }
       if (window.location.pathname === '/shop') {
         return '/shop';
       }
@@ -66,9 +69,6 @@ const MainContent: React.FC = () => {
       if (window.location.pathname === '/music') {
         return '/music';
       }
-      if (window.location.pathname === '/videos') {
-        return '/videos';
-      }
       if (window.location.pathname === '/contact') {
         return '/contact';
       }
@@ -84,6 +84,8 @@ const MainContent: React.FC = () => {
       if (photoId) return photoId;
       const productId = urlParams.get('product');
       if (productId) return productId;
+      const videoId = urlParams.get('video');
+      if (videoId) return videoId;
     }
     return 'photo-1';
   });
@@ -100,6 +102,8 @@ const MainContent: React.FC = () => {
         window.history.pushState(null, '', `/?photo=${encodeURIComponent(param)}`);
       } else if (path === '/product-detail' && param) {
         window.history.pushState(null, '', `/?product=${encodeURIComponent(param)}`);
+      } else if (path === '/videos' && param) {
+        window.history.pushState(null, '', `/?video=${encodeURIComponent(param)}`);
       } else if (path === '/') {
         window.history.pushState(null, '', '/');
       } else {
@@ -116,6 +120,7 @@ const MainContent: React.FC = () => {
       const newsId = urlParams.get('news');
       const photoId = urlParams.get('photo');
       const prodId = urlParams.get('product');
+      const videoId = urlParams.get('video');
 
       if (newsId) {
         setCurrentPath('/news-detail');
@@ -126,6 +131,9 @@ const MainContent: React.FC = () => {
       } else if (prodId) {
         setCurrentPath('/product-detail');
         setCurrentParam(prodId);
+      } else if (videoId) {
+        setCurrentPath('/videos');
+        setCurrentParam(videoId);
       } else if (window.location.pathname) {
         setCurrentPath(window.location.pathname || '/');
       }
@@ -156,7 +164,7 @@ const MainContent: React.FC = () => {
           <PhotoDetail photoId={currentParam} onNavigate={handleNavigate} />
         )}
         {currentPath === '/music' && <Music />}
-        {currentPath === '/videos' && <Videos />}
+        {currentPath === '/videos' && <Videos videoId={currentParam} onNavigate={handleNavigate} />}
         {currentPath === '/shop' && <Shop onNavigate={handleNavigate} />}
         {currentPath === '/product-detail' && (
           <ProductDetail productId={currentParam} onNavigate={handleNavigate} />
