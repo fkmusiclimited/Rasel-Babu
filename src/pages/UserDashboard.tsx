@@ -472,13 +472,6 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onNavigate }) => {
                   <Mail className="w-3.5 h-3.5" />
                   <span>raselbabu@fkmusicltd.com</span>
                 </a>
-                <a
-                  href="mailto:support@fkmusicltd.com"
-                  className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center gap-2 hover:bg-zinc-800 transition-colors"
-                >
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>support@fkmusicltd.com</span>
-                </a>
               </div>
             </div>
           </aside>

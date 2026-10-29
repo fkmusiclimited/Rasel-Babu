@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { AdSlot } from '../components/ads/AdSlot';
-import { Search, Heart, Eye, ArrowRight, Camera, Sparkles } from 'lucide-react';
+import { Search, Heart, Eye, ArrowRight, Camera, Sparkles, Share2, Check } from 'lucide-react';
 
 interface GalleryProps {
   onNavigate: (path: string, param?: string) => void;
@@ -12,6 +12,31 @@ export const Gallery: React.FC<GalleryProps> = ({ onNavigate }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [visibleCount, setVisibleCount] = useState<number>(6);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyPhotoShare = async (e: React.MouseEvent, photoId: string) => {
+    e.stopPropagation();
+    const url = typeof window !== 'undefined'
+      ? `${window.location.origin}/?photo=${encodeURIComponent(photoId)}`
+      : `https://raselbabu.com/?photo=${encodeURIComponent(photoId)}`;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
+      setCopiedId(photoId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {}
+  };
 
   const categories = [
     { id: 'all', label: 'All Photos' },
@@ -22,11 +47,16 @@ export const Gallery: React.FC<GalleryProps> = ({ onNavigate }) => {
   ];
 
   const filteredPhotos = photos.filter((photo) => {
-    const matchesCategory = selectedCategory === 'all' || photo.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || (photo.category || '').toLowerCase() === selectedCategory.toLowerCase();
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return matchesCategory;
+    const title = (photo.title || '').toLowerCase();
+    const loc = (photo.location || '').toLowerCase();
+    const tags = Array.isArray(photo.tags) ? photo.tags : [];
     const matchesQuery =
-      photo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      photo.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      photo.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      title.includes(query) ||
+      loc.includes(query) ||
+      tags.some((t) => (t || '').toLowerCase().includes(query));
     return matchesCategory && matchesQuery;
   });
 
@@ -102,10 +132,11 @@ export const Gallery: React.FC<GalleryProps> = ({ onNavigate }) => {
                 key={photo.id}
                 className="group rounded-2xl overflow-hidden border border-zinc-800/90 bg-zinc-900/60 flex flex-col transition-all hover:border-amber-400/50 hover:shadow-2xl hover:shadow-black"
               >
-                {/* Image Container with Natural Click */}
+                {/* Image Container with Natural Click (3000x3000 Square Ratio) */}
                 <div
                   onClick={() => handlePhotoClick(photo.id)}
-                  className="relative aspect-[4/3] overflow-hidden cursor-pointer bg-zinc-950"
+                  className="relative aspect-square overflow-hidden cursor-pointer bg-zinc-950"
+                  title="Click to view full 3000×3000 ultra high-resolution photo"
                 >
                   <img
                     src={photo.imageUrl}
@@ -114,9 +145,14 @@ export const Gallery: React.FC<GalleryProps> = ({ onNavigate }) => {
                     loading="lazy"
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
-                    <span className="text-xs text-amber-300 font-semibold flex items-center gap-1">
-                      <span>View Full High-Res Photo</span>
+                  {/* 3000x3000 Ultra HD badge */}
+                  <span className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-amber-300 border border-amber-500/30 text-[10px] font-mono shadow-md flex items-center gap-1">
+                    <Camera className="w-3 h-3 text-amber-400" />
+                    <span>3000×3000 UHD</span>
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
+                    <span className="text-xs text-amber-300 font-semibold flex items-center gap-1.5 drop-shadow">
+                      <span>View Full 3000×3000 Photo</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
@@ -164,12 +200,27 @@ export const Gallery: React.FC<GalleryProps> = ({ onNavigate }) => {
                       </button>
                     </div>
 
-                    <button
-                      onClick={() => handlePhotoClick(photo.id)}
-                      className="text-[11px] text-amber-400 hover:underline cursor-pointer"
-                    >
-                      Details & EXIF
-                    </button>
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        onClick={(e) => handleCopyPhotoShare(e, photo.id)}
+                        className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-amber-400 transition-colors cursor-pointer"
+                        title="Copy photo share link (ছবি শেয়ার লিংক কপি করুন)"
+                      >
+                        {copiedId === photo.id ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Share2 className="w-3.5 h-3.5" />
+                        )}
+                        <span>{copiedId === photo.id ? 'Copied' : 'Share'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handlePhotoClick(photo.id)}
+                        className="text-[11px] text-amber-400 hover:underline cursor-pointer"
+                      >
+                        Details & EXIF
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

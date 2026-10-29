@@ -26,7 +26,7 @@ export const News: React.FC<NewsProps> = ({ onNavigate }) => {
 
   const filteredNews = selectedCategory === 'all'
     ? news
-    : news.filter((n) => n.category.toLowerCase() === selectedCategory.toLowerCase());
+    : news.filter((n) => (n.category || '').toLowerCase() === selectedCategory.toLowerCase());
 
   const handleOpenArticle = (articleId: string) => {
     if (onNavigate) {

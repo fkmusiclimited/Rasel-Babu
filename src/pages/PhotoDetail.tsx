@@ -40,10 +40,44 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({ photoId, onNavigate })
   const nextPhoto = currentIndex < photos.length - 1 ? photos[currentIndex + 1] : photos[0];
   const relatedPhotos = photos.filter((p) => p.id !== currentPhoto.id && p.category === currentPhoto.category).slice(0, 3);
 
-  const handleShare = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const shareUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/?photo=${encodeURIComponent(currentPhoto.id)}`
+      : `https://raselbabu.com/?photo=${encodeURIComponent(currentPhoto.id)}`;
+
+  const handleShare = async () => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (err) {
+      console.warn('Failed to copy share link:', err);
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    const text = encodeURIComponent(`${currentPhoto.title} | Rasel Babu Official Photo Gallery\n\n${shareUrl}`);
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleShareFacebook = () => {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
   return (
@@ -61,7 +95,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({ photoId, onNavigate })
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => onNavigate('/photo-detail', prevPhoto.id)}
+              onClick={() => prevPhoto && onNavigate('/photo-detail', prevPhoto.id)}
               className="flex items-center gap-1 px-3 py-1.5 text-xs text-zinc-300 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -71,7 +105,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({ photoId, onNavigate })
               {currentIndex + 1} / {photos.length}
             </span>
             <button
-              onClick={() => onNavigate('/photo-detail', nextPhoto.id)}
+              onClick={() => nextPhoto && onNavigate('/photo-detail', nextPhoto.id)}
               className="flex items-center gap-1 px-3 py-1.5 text-xs text-zinc-300 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
             >
               <span>Next</span>
@@ -109,7 +143,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({ photoId, onNavigate })
                   </h1>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={() => likePhoto(currentPhoto.id)}
                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-pink-950/40 border border-zinc-700 hover:border-pink-500/50 text-xs font-medium text-pink-400 transition-colors cursor-pointer"
@@ -119,11 +153,28 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({ photoId, onNavigate })
                   </button>
 
                   <button
+                    onClick={handleShareWhatsApp}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-xs font-medium text-emerald-300 transition-colors cursor-pointer"
+                    title="Share to WhatsApp (হোয়াটসঅ্যাপে শেয়ার করুন)"
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>WhatsApp</span>
+                  </button>
+
+                  <button
+                    onClick={handleShareFacebook}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-xs font-medium text-blue-300 transition-colors cursor-pointer"
+                    title="Share to Facebook (ফেসবুকে শেয়ার করুন)"
+                  >
+                    <span>Facebook</span>
+                  </button>
+
+                  <button
                     onClick={handleShare}
                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-xs font-medium text-zinc-200 transition-colors cursor-pointer"
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'Copied' : 'Share'}</span>
+                    <span>{copied ? 'Link Copied' : 'Copy Link'}</span>
                   </button>
                 </div>
               </div>
@@ -151,6 +202,14 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({ photoId, onNavigate })
               </h3>
 
               <div className="space-y-3 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <Camera className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-zinc-500 block">Resolution &amp; Aspect</span>
+                    <span className="text-zinc-200 font-mono font-medium">3000 × 3000 px (1:1 Ultra HD Square)</span>
+                  </div>
+                </div>
+
                 <div className="flex items-start gap-2.5">
                   <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <div>

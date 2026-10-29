@@ -106,8 +106,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const saved = localStorage.getItem(CURRENT_USER_KEY);
       if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error('Failed to load current user', e);
+    } catch {
+      // Quiet fallback
     }
     return null;
   });
@@ -119,8 +119,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const parsed: User[] = JSON.parse(saved);
         return sanitizeUsers(parsed);
       }
-    } catch (e) {
-      console.error('Failed to load stored users', e);
+    } catch {
+      // Quiet fallback
     }
     return sanitizeUsers(INITIAL_USERS);
   });
@@ -133,8 +133,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         localStorage.removeItem(TOKEN_KEY);
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // LocalStorage access notice
     }
   }, [token]);
 
@@ -146,8 +146,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         localStorage.removeItem(CURRENT_USER_KEY);
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // LocalStorage access notice
     }
   }, [currentUser]);
 
@@ -155,8 +155,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     try {
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // LocalStorage access notice
     }
   }, [users]);
 

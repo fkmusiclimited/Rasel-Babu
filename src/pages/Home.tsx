@@ -422,7 +422,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               return (
                 <div
                   key={prod.id}
-                  onClick={() => openProductView(prod)}
+                  onClick={() => onNavigate('/product-detail', prod.id)}
                   className="group relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/60 cursor-pointer flex flex-col justify-between transition-all hover:border-amber-400/50 hover:shadow-xl hover:shadow-black"
                 >
                   <div className="relative aspect-[4/3] bg-zinc-950 overflow-hidden">

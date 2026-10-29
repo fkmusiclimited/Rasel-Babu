@@ -32,20 +32,45 @@ import { ResetPassword } from './pages/ResetPassword';
 import { LegalPages } from './pages/legal/LegalPages';
 import { WaterRipple } from './components/effects/WaterRipple';
 import { MusicAnimation } from './components/effects/MusicAnimation';
+import { ProductDetail } from './pages/ProductDetail';
 import { ProductDetailModal } from './components/shop/ProductDetailModal';
 
 const MainContent: React.FC = () => {
   const [currentPath, setCurrentPath] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('news')) {
+      if (urlParams.get('news') || window.location.pathname === '/news-detail') {
         return '/news-detail';
+      }
+      if (urlParams.get('photo') || window.location.pathname === '/photo-detail') {
+        return '/photo-detail';
+      }
+      if (urlParams.get('product') || window.location.pathname === '/product-detail') {
+        return '/product-detail';
+      }
+      if (window.location.pathname === '/shop') {
+        return '/shop';
       }
       if (window.location.pathname === '/reset-password') {
         return '/reset-password';
       }
-      if (window.location.pathname === '/news-detail') {
-        return '/news-detail';
+      if (window.location.pathname === '/gallery') {
+        return '/gallery';
+      }
+      if (window.location.pathname === '/news') {
+        return '/news';
+      }
+      if (window.location.pathname === '/about') {
+        return '/about';
+      }
+      if (window.location.pathname === '/music') {
+        return '/music';
+      }
+      if (window.location.pathname === '/videos') {
+        return '/videos';
+      }
+      if (window.location.pathname === '/contact') {
+        return '/contact';
       }
     }
     return '/';
@@ -55,10 +80,14 @@ const MainContent: React.FC = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const newsId = urlParams.get('news');
       if (newsId) return newsId;
+      const photoId = urlParams.get('photo');
+      if (photoId) return photoId;
+      const productId = urlParams.get('product');
+      if (productId) return productId;
     }
     return 'photo-1';
   });
-  const { recordPageView, homepageSettings } = useData();
+  const { recordPageView, homepageSettings, openProductView, products } = useData();
 
   const handleNavigate = (path: string, param?: string) => {
     setCurrentPath(path);
@@ -67,8 +96,14 @@ const MainContent: React.FC = () => {
     if (typeof window !== 'undefined') {
       if (path === '/news-detail' && param) {
         window.history.pushState(null, '', `/?news=${encodeURIComponent(param)}`);
-      } else if (path === '/news' && window.location.search.includes('news=')) {
-        window.history.pushState(null, '', '/news');
+      } else if (path === '/photo-detail' && param) {
+        window.history.pushState(null, '', `/?photo=${encodeURIComponent(param)}`);
+      } else if (path === '/product-detail' && param) {
+        window.history.pushState(null, '', `/?product=${encodeURIComponent(param)}`);
+      } else if (path === '/') {
+        window.history.pushState(null, '', '/');
+      } else {
+        window.history.pushState(null, '', path);
       }
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -79,9 +114,20 @@ const MainContent: React.FC = () => {
     const handlePopState = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const newsId = urlParams.get('news');
+      const photoId = urlParams.get('photo');
+      const prodId = urlParams.get('product');
+
       if (newsId) {
         setCurrentPath('/news-detail');
         setCurrentParam(newsId);
+      } else if (photoId) {
+        setCurrentPath('/photo-detail');
+        setCurrentParam(photoId);
+      } else if (prodId) {
+        setCurrentPath('/product-detail');
+        setCurrentParam(prodId);
+      } else if (window.location.pathname) {
+        setCurrentPath(window.location.pathname || '/');
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -111,7 +157,10 @@ const MainContent: React.FC = () => {
         )}
         {currentPath === '/music' && <Music />}
         {currentPath === '/videos' && <Videos />}
-        {currentPath === '/shop' && <Shop />}
+        {currentPath === '/shop' && <Shop onNavigate={handleNavigate} />}
+        {currentPath === '/product-detail' && (
+          <ProductDetail productId={currentParam} onNavigate={handleNavigate} />
+        )}
         {currentPath === '/distribution' && <Distribution />}
         {currentPath === '/news' && <News onNavigate={handleNavigate} />}
         {currentPath === '/news-detail' && (

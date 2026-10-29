@@ -281,8 +281,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const saved = localStorage.getItem(POINTS_TX_KEY);
       if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return INITIAL_POINT_TRANSACTIONS;
   });
@@ -298,8 +298,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return parsed.map(normalizePhotoItem);
         }
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return INITIAL_PHOTOS.map(normalizePhotoItem);
   });
@@ -318,8 +318,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return a;
         });
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return INITIAL_ALBUMS;
   });
@@ -333,8 +333,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return INITIAL_VIDEOS;
   });
@@ -369,8 +369,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         });
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return INITIAL_PRODUCTS;
   });
@@ -395,8 +395,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const saved = localStorage.getItem(ORDERS_KEY);
       if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return INITIAL_ORDERS;
   });
@@ -407,8 +407,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const saved = localStorage.getItem(NEWS_KEY);
       if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return INITIAL_NEWS;
   });
@@ -418,8 +418,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const saved = localStorage.getItem(TOURS_KEY);
       if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return INITIAL_TOUR_EVENTS;
   });
@@ -429,8 +429,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const saved = localStorage.getItem(INQUIRIES_KEY);
       if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return [
       {
@@ -454,8 +454,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const saved = localStorage.getItem(MESSAGES_KEY);
       if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return [
       {
@@ -496,8 +496,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
         };
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return { ...INITIAL_ADSTERRA_CONFIG, socialBarEnabled: false };
   });
@@ -507,8 +507,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const saved = localStorage.getItem(ANALYTICS_KEY);
       if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return INITIAL_ANALYTICS;
   });
@@ -535,8 +535,8 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       if (saved) {
         return sanitizeSettings(JSON.parse(saved));
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return INITIAL_HOMEPAGE_SETTINGS;
   });
@@ -712,8 +712,8 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     try {
       const saved = localStorage.getItem(DIST_INQUIRIES_KEY);
       if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return INITIAL_DISTRIBUTION_INQUIRIES;
   });
@@ -723,8 +723,8 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     try {
       const saved = localStorage.getItem(ANNUAL_GIFT_KEY);
       if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback to initial
     }
     return INITIAL_ANNUAL_GIFT_CONFIG;
   });
@@ -932,6 +932,46 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
         message: 'নেটওয়ার্ক ত্রুটি: ' + (err?.message || 'Network error saving videos'),
       };
     }
+  };
+
+  const persistProductsToServer = async (targetProducts: Product[]): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        body: JSON.stringify({ products: targetProducts }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        return { success: true };
+      }
+    } catch (e) {
+      console.warn('Could not mirror products to server:', e);
+    }
+    return { success: true };
+  };
+
+  const persistNewsToServer = async (targetNews: NewsArticle[]): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const res = await fetch('/api/news', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        body: JSON.stringify({ news: targetNews }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        return { success: true };
+      }
+    } catch (e) {
+      console.warn('Could not mirror news to server:', e);
+    }
+    return { success: true };
   };
 
   const fetchPhotosData = async (): Promise<PhotoItem[] | null> => {
@@ -1477,6 +1517,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
+    persistProductsToServer(updated).catch(() => {});
     return {
       success: true,
       message: 'প্রোডাক্ট সফলভাবে ক্লাউড স্টোরে সংরক্ষিত হয়েছে এবং সব ভিজিটর ও ডিভাইসের জন্য লাইভ হয়েছে!',
@@ -1498,6 +1539,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
+    persistProductsToServer(updatedList).catch(() => {});
     return {
       success: true,
       message: 'প্রোডাক্ট সফলভাবে ক্লাউডে আপডেট হয়েছে!',
@@ -1521,7 +1563,10 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
       bc.close();
     } catch {}
 
-    // 3. Delete from Google Cloud Firestore (automatic cloud sync)
+    // 3. Mirror to server disk
+    persistProductsToServer(updatedList).catch(() => {});
+
+    // 4. Delete from Google Cloud Firestore (automatic cloud sync)
     const cloudRes = await deleteProductFromFirestore(id);
     if (!cloudRes.success) {
       console.warn('Firestore product delete notice:', cloudRes.message);
@@ -1587,6 +1632,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
+    persistNewsToServer(updated).catch(() => {});
     return {
       success: true,
       message: 'নিউজ আর্টিকেল সফলভাবে ক্লাউড ডাটাবেজে সংরক্ষিত ও সব ভিজিটরের জন্য লাইভ হয়েছে!',
@@ -1611,6 +1657,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
+    persistNewsToServer(updatedList).catch(() => {});
     return {
       success: true,
       message: 'নিউজ আর্টিকেল সফলভাবে ক্লাউডে আপডেট হয়েছে!',
@@ -1629,6 +1676,7 @@ const sanitizeSettings = (raw: any): HomepageSettings => {
     } catch (e) {
       console.warn(e);
     }
+    persistNewsToServer(updatedList).catch(() => {});
     if (!cloudRes.success) {
       console.warn('Firestore news delete notice:', cloudRes.message);
     }

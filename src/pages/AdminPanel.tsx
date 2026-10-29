@@ -169,10 +169,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
 
   type AdminTab =
     | 'overview'
+    | 'users'
     | 'fan_orders'
     | 'shop'
     | 'products'
-    | 'users'
+    | 'points_gift'
     | 'messages'
     | 'gallery_video'
     | 'homepage'
@@ -181,6 +182,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     | 'distribution'
     | 'monetization'
     | 'news'
+    | 'password_change'
     | 'analytics';
 
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
@@ -827,10 +829,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
 
   // Filter users
   const filteredUsers = users.filter((u) => {
+    const q = userSearch.trim().toLowerCase();
     const matchesSearch =
-      u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.role.toLowerCase().includes(userSearch.toLowerCase());
+      !q ||
+      (u.name || '').toLowerCase().includes(q) ||
+      (u.email || '').toLowerCase().includes(q) ||
+      (u.role || '').toLowerCase().includes(q);
     const matchesStatus = userStatusFilter === 'all' || u.status === userStatusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -1270,14 +1274,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
             <span className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300">
               Role: <strong className="text-amber-400 uppercase">{currentUser?.role}</strong>
             </span>
-            <button
-              type="button"
-              onClick={() => setAdminPasswordModal({ open: true, currentPass: '', newPass: '', confirmPass: '', loading: false, error: null, success: null })}
-              className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-amber-500/30 text-amber-300 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-              <span>Change Password</span>
-            </button>
           </div>
         </div>
 
@@ -1315,22 +1311,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                   FULL CONTROL
                 </span>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setAdminPasswordModal({ open: true, currentPass: '', newPass: '', confirmPass: '', loading: false, error: null, success: null })}
-                className="w-full py-2 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-amber-300 border border-amber-500/20 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                <span>Change Admin Password</span>
-              </button>
             </div>
 
             {/* Serialized Main Menu Options (বা পাশে সিরিয়াল মেনু) */}
             <div className="p-3.5 rounded-2xl bg-zinc-950/90 border border-zinc-800 space-y-1.5 shadow-xl">
               <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold flex items-center justify-between">
                 <span>MAIN OPTIONS (মূল অপশনসমূহ)</span>
-                <span className="text-amber-400">10 SECTIONS</span>
+                <span className="text-amber-400">12 SECTIONS</span>
               </div>
 
               <nav className="space-y-1" aria-label="Admin Navigation">
@@ -1343,8 +1330,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                     icon: LayoutDashboard,
                   },
                   {
-                    id: 'fan_orders' as const,
+                    id: 'users' as const,
                     serial: '02',
+                    label: 'Users',
+                    labelBn: 'সকল ইউজার ও ভেরিফিকেশন তালিকা',
+                    icon: Users,
+                    badge: pendingCount > 0 ? `${pendingCount} new` : users.length,
+                    badgeColor: pendingCount > 0 ? 'bg-pink-600 text-white animate-pulse' : 'bg-zinc-800 text-zinc-300',
+                  },
+                  {
+                    id: 'fan_orders' as const,
+                    serial: '03',
                     label: 'Fan Orders',
                     labelBn: 'ফ্যান অর্ডার ও ডেলিভারি ট্র্যাকিং',
                     icon: Truck,
@@ -1353,7 +1349,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                   },
                   {
                     id: 'shop' as const,
-                    serial: '03',
+                    serial: '04',
                     label: 'Shop',
                     labelBn: 'সকল প্রোডাক্ট ও নতুন পণ্য অ্যাড',
                     icon: ShoppingBag,
@@ -1361,17 +1357,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                     badgeColor: 'bg-amber-400 text-black font-bold',
                   },
                   {
-                    id: 'users' as const,
-                    serial: '04',
-                    label: 'Fan Accounts & Points',
-                    labelBn: 'ফ্যান অ্যাকাউন্ট ও বোনাস পয়েন্ট',
-                    icon: Users,
-                    badge: pendingCount > 0 ? `${pendingCount} new` : users.length,
-                    badgeColor: pendingCount > 0 ? 'bg-pink-600 text-white animate-pulse' : 'bg-zinc-800 text-zinc-300',
+                    id: 'points_gift' as const,
+                    serial: '05',
+                    label: 'Points & Gift',
+                    labelBn: 'পয়েন্ট ও গিফট ম্যানেজমেন্ট',
+                    icon: Gift,
+                    badge: `${users.reduce((acc, u) => acc + (u.points || 0), 0).toLocaleString()} pts`,
+                    badgeColor: 'bg-amber-400 text-black font-bold',
                   },
                   {
                     id: 'messages' as const,
-                    serial: '05',
+                    serial: '06',
                     label: 'Fan Messages & Replies',
                     labelBn: 'মেসেজ সিন ও সরাসরি রিপ্লাই',
                     icon: Send,
@@ -1380,7 +1376,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                   },
                   {
                     id: 'gallery_video' as const,
-                    serial: '06',
+                    serial: '07',
                     label: 'Gallery & Video',
                     labelBn: 'ফটো ও ভিডিও ম্যানেজমেন্ট',
                     icon: Film,
@@ -1389,7 +1385,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                   },
                   {
                     id: 'homepage' as const,
-                    serial: '07',
+                    serial: '08',
                     label: 'Edit Website',
                     labelBn: 'সকল টেক্সট ও ফটো এডিট',
                     icon: Globe,
@@ -1398,7 +1394,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                   },
                   {
                     id: 'news' as const,
-                    serial: '08',
+                    serial: '09',
                     label: 'News & Press Releases',
                     labelBn: 'প্রেস বিজ্ঞপ্তি ও নিউজ পাবলিশিং',
                     icon: Newspaper,
@@ -1407,7 +1403,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                   },
                   {
                     id: 'distribution' as const,
-                    serial: '09',
+                    serial: '10',
                     label: 'FK Music Distribution',
                     labelBn: 'ওয়েবসাইট মেসেজ ও আবেদন',
                     icon: Disc,
@@ -1420,10 +1416,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                   },
                   {
                     id: 'monetization' as const,
-                    serial: '10',
+                    serial: '11',
                     label: 'Adsterra Monetization',
                     labelBn: 'বিজ্ঞাপন ও মনেটাইজেশন',
                     icon: DollarSign,
+                  },
+                  {
+                    id: 'password_change' as const,
+                    serial: '12',
+                    label: 'Password Change',
+                    labelBn: 'অ্যাডমিন পাসওয়ার্ড পরিবর্তন',
+                    icon: KeyRound,
                   },
                 ].map((item) => {
                   const isActive = activeTab === item.id;
@@ -2050,30 +2053,62 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
               </div>
             )}
 
-        {/* TAB: USERS, 1-YEAR POINTS GRAPH & APPROVALS */}
+        {/* =========================================================================
+            TAB 02: USERS & REGISTRATION APPROVALS (সকল ইউজার ও ভেরিফিকেশন তালিকা)
+           ========================================================================= */}
         {activeTab === 'users' && (
-          <div className="space-y-8 animate-fade-in">
-            {/* 1-YEAR USER POINTS GRAPH, ANNUAL MEGA GIFT AWARD & RANKING TABLE */}
-            <YearlyPointsGraph
-              isAdminView={true}
-              onOpenBonusModal={(uid) => {
-                setSelectedBonusUserId(uid);
-                window.scrollTo({ top: 400, behavior: 'smooth' });
-              }}
-            />
+          <div className="space-y-6 animate-fade-in">
+            {/* Top Header Card */}
+            <div className="p-6 rounded-3xl bg-zinc-900/50 border border-zinc-800 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="space-y-1.5 max-w-2xl">
+                <div className="inline-flex items-center gap-2 text-pink-400 text-xs font-mono uppercase tracking-wider font-bold">
+                  <Users className="w-4 h-4 text-pink-400" />
+                  <span>OPTION 02: USERS DESK · সকল ইউজার ও ভেরিফিকেশন তালিকা</span>
+                </div>
+                <h3 className="font-display text-2xl font-bold text-white">
+                  Fan Accounts &amp; Member Verification Desk
+                </h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  সকল নিবন্ধিত ফ্যান ইউজারদের প্রোফাইল তালিকা, অ্যাকাউন্ট অনুমোদন বা বাতিল (Approve/Reject), অ্যাডমিন রোল অ্যাসাইন এবং জরুরি সিকিউর পাসওয়ার্ড রিসেট লিংক তৈরি করুন।
+                </p>
+              </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
+              {/* Quick Actions & Stats */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <div className="px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono">
+                  <span className="text-zinc-500 block text-[10px] uppercase">Total Users</span>
+                  <span className="text-white font-bold">{users.length} Registered</span>
+                </div>
+                <div className="px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono">
+                  <span className="text-zinc-500 block text-[10px] uppercase">Pending</span>
+                  <span className={pendingCount > 0 ? 'text-pink-400 font-bold animate-pulse' : 'text-emerald-400 font-bold'}>
+                    {pendingCount} Awaiting
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('points_gift')}
+                  className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-lg shadow-amber-400/20 cursor-pointer"
+                >
+                  <Gift className="w-3.5 h-3.5 text-black" />
+                  <span>Points &amp; Gift Desk →</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Status & Search Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-900/30 p-4 rounded-2xl border border-zinc-800">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-mono uppercase text-zinc-400">Filter Status:</span>
 
                 {(['all', 'pending', 'approved', 'rejected'] as const).map((st) => (
                   <button
                     key={st}
                     onClick={() => setUserStatusFilter(st)}
-                    className={`px-3 py-1.5 rounded-lg text-xs capitalize transition-colors ${
+                    className={`px-3 py-1.5 rounded-lg text-xs capitalize transition-colors cursor-pointer ${
                       userStatusFilter === st
-                        ? 'bg-zinc-700 text-white font-semibold'
-                        : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                        ? 'bg-zinc-700 text-white font-semibold shadow'
+                        : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
                     }`}
                   >
                     {st} {st === 'pending' && pendingCount > 0 ? `(${pendingCount})` : ''}
@@ -2081,147 +2116,407 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                 ))}
               </div>
 
-              <div className="relative w-full sm:w-64">
+              <div className="relative w-full sm:w-72">
                 <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Search user by name or email..."
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400 font-sans"
                 />
               </div>
             </div>
 
             {/* Users Table */}
-            <div className="overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-900/40">
+            <div className="overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-900/40 shadow-xl">
               <table className="w-full text-left text-xs">
                 <thead className="bg-zinc-950/80 text-zinc-400 font-mono uppercase border-b border-zinc-800">
                   <tr>
                     <th className="p-4">User / Email</th>
                     <th className="p-4">Registration Date</th>
                     <th className="p-4">Status</th>
+                    <th className="p-4">Points</th>
                     <th className="p-4">Role</th>
                     <th className="p-4 text-right">Approval Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/60">
-                  {filteredUsers.map((u, idx) => (
-                    <tr key={`user-row-${u.id}-${u.email}-${idx}`} className="hover:bg-zinc-800/30 transition-colors">
-                      <td className="p-4">
-                        <div className="font-semibold text-white">{u.name}</div>
-                        <div className="text-zinc-400 font-mono text-[11px]">{u.email}</div>
-                        {u.bio && <div className="text-zinc-500 text-[11px] italic mt-0.5 max-w-xs truncate">{u.bio}</div>}
-                      </td>
-                      <td className="p-4 font-mono text-zinc-400">
-                        {new Date(u.registeredAt).toLocaleDateString()}
-                      </td>
-                      <td className="p-4">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider ${
-                            u.status === 'approved'
-                              ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/50'
-                              : u.status === 'pending'
-                              ? 'bg-amber-950/60 text-amber-400 border border-amber-800/50 animate-pulse'
-                              : 'bg-red-950/60 text-red-400 border border-red-800/50'
-                          }`}
-                        >
-                          {u.status}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        {isSuperAdmin ? (
-                          <select
-                            value={u.role}
-                            onChange={(e) => updateUserRole(u.id, e.target.value as UserRole)}
-                            className="bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-amber-400 focus:outline-none"
-                          >
-                            <option value="user">User / Fan</option>
-                            <option value="moderator">Moderator</option>
-                            <option value="manager">Manager</option>
-                            <option value="admin">Admin</option>
-                          </select>
-                        ) : (
-                          <span className="font-mono text-zinc-300 capitalize">{u.role}</span>
-                        )}
-                      </td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-2 flex-wrap">
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              setResetModalData({ open: true, user: u, loading: true });
-                              const res = await initiatePasswordReset(u.email, u.id);
-                              if (res.success) {
-                                setResetModalData({
-                                  open: true,
-                                  user: u,
-                                  resetLink: res.resetLink,
-                                  expiresAt: res.expiresAt,
-                                  loading: false,
-                                  success: res.message,
-                                });
-                              } else {
-                                setResetModalData({
-                                  open: true,
-                                  user: u,
-                                  loading: false,
-                                  error: res.message,
-                                });
-                              }
-                            }}
-                            className="px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-medium text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
-                            title="Generate & Dispatch Secure Password Reset Email Link"
-                          >
-                            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Reset Password</span>
-                          </button>
-
-                          {u.status === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => approveUser(u.id)}
-                                className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
-                                title="Approve Registration"
-                              >
-                                <CheckCircle className="w-3.5 h-3.5" />
-                                <span>Approve</span>
-                              </button>
-                              <button
-                                onClick={() => rejectUser(u.id, 'Did not satisfy verification criteria')}
-                                className="px-2.5 py-1 rounded bg-red-950 hover:bg-red-900 border border-red-800/60 text-red-300 font-medium text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
-                                title="Reject Registration"
-                              >
-                                <XCircle className="w-3.5 h-3.5" />
-                                <span>Reject</span>
-                              </button>
-                            </>
-                          )}
-                          {u.status === 'rejected' && (
-                            <button
-                              onClick={() => approveUser(u.id)}
-                              className="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px]"
-                            >
-                              Re-Approve
-                            </button>
-                          )}
-                          {u.status === 'approved' &&
-                            u.email !== 'raselbabuwebsiteshop@gmail.com' &&
-                            u.email !== 'fkbabu01@gmail.com' && (
-                            <button
-                              onClick={() => rejectUser(u.id, 'Access revoked by administration')}
-                              className="text-[11px] text-zinc-500 hover:text-red-400"
-                            >
-                              Revoke
-                            </button>
-                          )}
-                        </div>
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-zinc-500 italic">
+                        No registered users found matching the filter "{userStatusFilter}".
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredUsers.map((u, idx) => (
+                      <tr key={`user-row-${u.id}-${u.email}-${idx}`} className="hover:bg-zinc-800/30 transition-colors">
+                        <td className="p-4">
+                          <div className="font-semibold text-white">{u.name}</div>
+                          <div className="text-zinc-400 font-mono text-[11px]">{u.email}</div>
+                          {u.bio && <div className="text-zinc-500 text-[11px] italic mt-0.5 max-w-xs truncate">{u.bio}</div>}
+                        </td>
+                        <td className="p-4 font-mono text-zinc-400">
+                          {new Date(u.registeredAt).toLocaleDateString()}
+                        </td>
+                        <td className="p-4">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider ${
+                              u.status === 'approved'
+                                ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/50'
+                                : u.status === 'pending'
+                                ? 'bg-amber-950/60 text-amber-400 border border-amber-800/50 animate-pulse'
+                                : 'bg-red-950/60 text-red-400 border border-red-800/50'
+                            }`}
+                          >
+                            {u.status}
+                          </span>
+                        </td>
+                        <td className="p-4 font-mono">
+                          <span className="text-amber-400 font-bold">{u.points || 0}</span>
+                          <span className="text-zinc-500 text-[10px] ml-1">pts</span>
+                        </td>
+                        <td className="p-4">
+                          {isSuperAdmin ? (
+                            <select
+                              value={u.role}
+                              onChange={(e) => updateUserRole(u.id, e.target.value as UserRole)}
+                              className="bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-amber-400 focus:outline-none cursor-pointer"
+                            >
+                              <option value="user">User / Fan</option>
+                              <option value="moderator">Moderator</option>
+                              <option value="manager">Manager</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                          ) : (
+                            <span className="font-mono text-zinc-300 capitalize">{u.role}</span>
+                          )}
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end gap-2 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                setResetModalData({ open: true, user: u, loading: true });
+                                const res = await initiatePasswordReset(u.email, u.id);
+                                if (res.success) {
+                                  setResetModalData({
+                                    open: true,
+                                    user: u,
+                                    resetLink: res.resetLink,
+                                    expiresAt: res.expiresAt,
+                                    loading: false,
+                                    success: res.message,
+                                  });
+                                } else {
+                                  setResetModalData({
+                                    open: true,
+                                    user: u,
+                                    loading: false,
+                                    error: res.message,
+                                  });
+                                }
+                              }}
+                              className="px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-medium text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                              title="Generate & Dispatch Secure Password Reset Email Link"
+                            >
+                              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Reset Password</span>
+                            </button>
+
+                            {u.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => approveUser(u.id)}
+                                  className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Approve Registration"
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  <span>Approve</span>
+                                </button>
+                                <button
+                                  onClick={() => rejectUser(u.id, 'Did not satisfy verification criteria')}
+                                  className="px-2.5 py-1 rounded bg-red-950 hover:bg-red-900 border border-red-800/60 text-red-300 font-medium text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Reject Registration"
+                                >
+                                  <XCircle className="w-3.5 h-3.5" />
+                                  <span>Reject</span>
+                                </button>
+                              </>
+                            )}
+                            {u.status === 'rejected' && (
+                              <button
+                                onClick={() => approveUser(u.id)}
+                                className="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] cursor-pointer"
+                              >
+                                Re-Approve
+                              </button>
+                            )}
+                            {u.status === 'approved' &&
+                              u.email !== 'raselbabuwebsiteshop@gmail.com' &&
+                              u.email !== 'fkbabu01@gmail.com' && (
+                              <button
+                                onClick={() => rejectUser(u.id, 'Access revoked by administration')}
+                                className="text-[11px] text-zinc-500 hover:text-red-400 cursor-pointer"
+                              >
+                                Revoke
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 05: POINTS & GIFT MANAGEMENT (পয়েন্ট ও গিফট ম্যানেজমেন্ট)
+           ========================================================================= */}
+        {activeTab === 'points_gift' && (
+          <div className="space-y-8 animate-fade-in" id="points-gift-top">
+            {/* Top Header Card */}
+            <div className="p-6 rounded-3xl bg-zinc-900/50 border border-zinc-800 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="space-y-1.5 max-w-2xl">
+                <div className="inline-flex items-center gap-2 text-amber-400 text-xs font-mono uppercase tracking-wider font-bold">
+                  <Gift className="w-4 h-4 text-amber-400" />
+                  <span>OPTION 05: POINTS &amp; GIFT DESK · পয়েন্ট ও গিফট ম্যানেজমেন্ট</span>
+                </div>
+                <h3 className="font-display text-2xl font-bold text-white">
+                  Fan Points, Bonus Rewards &amp; Annual Gift Desk
+                </h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  ফ্যান মেম্বারদের বিশেষ বোনাস পয়েন্ট পাঠান, গিফট ট্রানজ্যাকশন হিস্টোরি নিরীক্ষণ করুন এবং ৩৬৫ দিনের বার্ষিক মেগা গিফট লিডারবোর্ড গ্রাফ পরিচালনা করুন।
+                </p>
+              </div>
+
+              {/* Link to Users Desk */}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('users')}
+                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-pink-300 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer border border-zinc-700"
+                >
+                  <Users className="w-3.5 h-3.5 text-pink-400" />
+                  <span>View All Users ({users.length}) →</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Bonus Send Alert Banner */}
+            {bonusSendAlert && (
+              <div
+                className={`p-4 rounded-2xl border text-xs flex items-center gap-2.5 animate-fade-in ${
+                  bonusSendAlert.type === 'success'
+                    ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-200'
+                    : 'bg-red-950/60 border-red-500/50 text-red-200'
+                }`}
+              >
+                {bonusSendAlert.type === 'success' ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+                )}
+                <span className="font-medium">{bonusSendAlert.message}</span>
+              </div>
+            )}
+
+            {/* Sub-Section: Bonus Points Generator & Recent Dispatched */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              
+              {/* Left: Send Points Bonus Form Card */}
+              <div className="lg:col-span-7 bg-gradient-to-br from-zinc-950 via-[#180f12] to-black border border-amber-500/40 rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+                
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-2 text-amber-300 font-bold text-sm">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>Send Points Bonus to Fan Member</span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-mono font-bold">
+                    INSTANT NOTIFICATION
+                  </span>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!selectedBonusUserId) {
+                      setBonusSendAlert({
+                        type: 'error',
+                        message: 'দয়া করে একজন ফ্যান মেম্বার নির্বাচন করুন (Please select a fan member).',
+                      });
+                      return;
+                    }
+                    if (!bonusPointsInput || bonusPointsInput <= 0) {
+                      setBonusSendAlert({
+                        type: 'error',
+                        message: 'সঠিক পয়েন্টের পরিমাণ দিন (Enter a valid points amount).',
+                      });
+                      return;
+                    }
+                    const res = sendBonusPoints(selectedBonusUserId, bonusPointsInput, bonusGiftNoteInput);
+                    if (res.success) {
+                      setBonusSendAlert({ type: 'success', message: res.message });
+                      setBonusGiftNoteInput('');
+                      setTimeout(() => setBonusSendAlert(null), 6000);
+                    } else {
+                      setBonusSendAlert({ type: 'error', message: res.message });
+                    }
+                  }}
+                  className="space-y-4 relative z-10"
+                >
+                  {/* User Select */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
+                      <span>Select Target User Account (ইউজার সিলেক্ট করুন)</span>
+                      <span className="text-[11px] text-zinc-400 font-normal">
+                        {users.filter((u) => u.status === 'approved').length} Active Fans
+                      </span>
+                    </label>
+                    <select
+                      value={selectedBonusUserId}
+                      onChange={(e) => setSelectedBonusUserId(e.target.value)}
+                      required
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400 font-sans"
+                    >
+                      <option value="">-- Choose User / ফ্যান মেম্বার নির্বাচন করুন --</option>
+                      {users.map((u, idx) => (
+                        <option key={`bonus-user-opt-${u.id}-${u.email}-${idx}`} value={u.id}>
+                          {u.name} ({u.email}) · Current: {u.points || 0} pts [{u.role.toUpperCase()}]
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Points Amount with Preset Buttons */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
+                      <span>Bonus Points Amount (পয়েন্টের পরিমাণ)</span>
+                      <span className="text-[11px] font-mono text-amber-300 font-bold">
+                        {bonusPointsInput} Points to Transfer
+                      </span>
+                    </label>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={10}
+                        max={100000}
+                        step={10}
+                        required
+                        value={bonusPointsInput}
+                        onChange={(e) => setBonusPointsInput(Number(e.target.value))}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-amber-400"
+                      />
+                    </div>
+
+                    {/* Quick Preset Buttons */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] text-zinc-400 font-mono">Quick Presets:</span>
+                      {[50, 100, 250, 500, 1000].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setBonusPointsInput(preset)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                            bonusPointsInput === preset
+                              ? 'bg-amber-400 text-black'
+                              : 'bg-zinc-900 hover:bg-zinc-800 text-amber-300 border border-zinc-800'
+                          }`}
+                        >
+                          +{preset} pts
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Gift Note */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-300">
+                      Congratulatory Gift Note (অভিনন্দন ও বিশেষ বার্তা)
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="e.g. Congratulations! Gift bonus for your ongoing love and support for Rasel Babu."
+                      value={bonusGiftNoteInput}
+                      onChange={(e) => setBonusGiftNoteInput(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 leading-relaxed font-sans"
+                    />
+                    <p className="text-[10px] text-zinc-400 leading-normal">
+                      * ইউজার তৎক্ষণাৎ একটি অফিসিয়াল নোটিফিকেশন মেসেজ পাবে: "🎉 Congratulations! You received {bonusPointsInput} Gift Points".
+                    </p>
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 text-black font-bold text-xs uppercase tracking-wider transition-all shadow-xl shadow-amber-400/25 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Gift className="w-4 h-4 text-black" />
+                    <span>Send Points Bonus &amp; Notify Fan (বোনাস পাঠান)</span>
+                  </button>
+                </form>
+              </div>
+
+              {/* Right: Recent Bonus Transactions Log */}
+              <div className="lg:col-span-5 bg-zinc-950 border border-zinc-800 rounded-2xl p-5 space-y-3">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5 border-b border-zinc-800/80 pb-2.5">
+                  <Gift className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Recent Bonus Gifts Sent (সম্প্রতি প্রেরিত বোনাস)</span>
+                </span>
+
+                {pointTransactions.length > 0 ? (
+                  <div className="space-y-2 font-mono text-xs max-h-80 overflow-y-auto">
+                    {pointTransactions.map((tx) => {
+                      const recipient = users.find((u) => u.id === tx.userId);
+                      return (
+                        <div
+                          key={tx.id}
+                          className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-between"
+                        >
+                          <div className="min-w-0 pr-2">
+                            <span className="font-bold text-white truncate block text-[11px]">
+                              {recipient?.name || 'Fan Member'}
+                            </span>
+                            <span className="text-[10px] text-zinc-400 truncate block font-sans">
+                              {tx.note || 'Bonus points gift'}
+                            </span>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-emerald-400 font-bold block text-xs">+{tx.amount} pts</span>
+                            <span className="text-[9px] text-zinc-500 font-sans">
+                              {new Date(tx.timestamp).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-500 italic py-6 text-center">
+                    No point bonuses dispatched yet. Use the tool on the left to send points anytime!
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* 1-YEAR USER POINTS GRAPH, ANNUAL MEGA GIFT AWARD & RANKING TABLE */}
+            <YearlyPointsGraph
+              isAdminView={true}
+              onOpenBonusModal={(uid) => {
+                setSelectedBonusUserId(uid);
+                const el = document.getElementById('points-gift-top');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  window.scrollTo({ top: 300, behavior: 'smooth' });
+                }
+              }}
+            />
           </div>
         )}
 
@@ -2292,42 +2587,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleBatchSyncPhotos}
-                      disabled={isSyncingCloud}
-                      className="px-3.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-blue-500/40"
-                      title="Push current gallery photos to Google Cloud Firestore so all visitors and devices see them immediately"
-                    >
-                      <Cloud className={`w-3.5 h-3.5 text-blue-400 ${isSyncingCloud ? 'animate-spin' : ''}`} />
-                      <span>{isSyncingCloud ? 'ক্লাউডে সিঙ্ক হচ্ছে...' : 'Push to Cloud (সব ছবি ক্লাউডে সিঙ্ক)'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDeleteConfirmModal({
-                          isOpen: true,
-                          title: 'Delete Demo Photos',
-                          titleBn: 'ডেমো ছবি মুছে ফেলা',
-                          itemName: 'Initial Demo Photos (photo-1 to photo-8)',
-                          message: 'আপনি কি নিশ্চিত যে ক্লাউড ডাটাবেজ থেকে পুরোনো ডিফল্ট ডেমো ছবিগুলো মুছে ফেলতে চান? আপনার নিজের আপলোড করা ছবিগুলো অপরিবর্তিত থাকবে।',
-                          onConfirm: async () => {
-                            const res = await deleteDemoPhotosFromCloud();
-                            setPhotoNotice(res.message);
-                            setTimeout(() => setPhotoNotice(null), 5000);
-                          },
-                        });
-                      }}
-                      className="px-3 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-red-500/30"
-                      title="Delete default demo photos from Firestore"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                      <span>Delete Demo Photos</span>
-                    </button>
-                    <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-mono">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                      <span>Auto-Sync Active</span>
-                    </div>
                     <button
                       type="button"
                       onClick={() => setShowAddPhoto(!showAddPhoto)}
@@ -2600,9 +2859,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
 
                 {/* Photos Grid with Edit and Delete */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {photos.map((p) => (
-                    <div key={p.id} className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 group hover:border-zinc-700 transition-all shadow-md">
-                      <div className="aspect-[4/3] overflow-hidden bg-black relative">
+                  {photos.map((p, pIdx) => (
+                    <div key={`admin-photo-${p.id || 'item'}-${pIdx}`} className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 group hover:border-zinc-700 transition-all shadow-md">
+                      <div className="aspect-square overflow-hidden bg-black relative">
                         <img src={p.imageUrl} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded text-[9px] font-mono uppercase bg-black/80 text-amber-400 border border-amber-400/30">
                           {p.category}
@@ -2673,10 +2932,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-mono">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                      <span>Auto-Sync Active</span>
-                    </div>
                     <button
                       type="button"
                       onClick={() => setShowAddVideoModal(true)}
@@ -2870,11 +3125,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
 
                 {/* Videos Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {videos.map((vid) => {
+                  {videos.map((vid, vidIdx) => {
                     const ytId = extractYouTubeId(vid.youtubeId || '');
                     return (
                       <div
-                        key={vid.id}
+                        key={`admin-video-${vid.id || 'vid'}-${vidIdx}`}
                         className="rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden space-y-3 hover:border-zinc-700 transition-all shadow-md"
                       >
                         <div className="relative aspect-video bg-black overflow-hidden">
@@ -4875,11 +5130,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
             const q = messageSearchQuery.toLowerCase().trim();
             const matchesSearch =
               !q ||
-              msg.userName.toLowerCase().includes(q) ||
-              msg.userEmail.toLowerCase().includes(q) ||
-              msg.subject.toLowerCase().includes(q) ||
-              msg.message.toLowerCase().includes(q) ||
-              (msg.reply && msg.reply.toLowerCase().includes(q));
+              (msg.userName || '').toLowerCase().includes(q) ||
+              (msg.userEmail || '').toLowerCase().includes(q) ||
+              (msg.subject || '').toLowerCase().includes(q) ||
+              (msg.message || '').toLowerCase().includes(q) ||
+              ((msg.reply || '').toLowerCase().includes(q));
             return matchesFilter && matchesSearch;
           });
 
@@ -5007,9 +5262,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {filteredMessages.map((msg) => (
+                      {filteredMessages.map((msg, msgIdx) => (
                         <div
-                          key={msg.id}
+                          key={`admin-msg-${msg.id || 'item'}-${msgIdx}`}
                           className={`p-5 rounded-2xl border space-y-4 text-xs shadow-xl transition-all ${
                             msg.status === 'pending'
                               ? 'bg-zinc-950 border-amber-500/40 ring-1 ring-amber-500/20'
@@ -5204,15 +5459,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
 
           const filteredDistInquiries = distributionInquiries.filter((inq) => {
             const matchesFilter = distFilter === 'all' || inq.status === distFilter;
-            const q = distSearch.toLowerCase();
+            const q = distSearch.trim().toLowerCase();
             const matchesSearch =
-              !distSearch ||
-              inq.artistName.toLowerCase().includes(q) ||
-              inq.releaseTitle.toLowerCase().includes(q) ||
-              inq.email.toLowerCase().includes(q) ||
-              inq.phone.toLowerCase().includes(q) ||
-              inq.genre.toLowerCase().includes(q) ||
-              inq.message.toLowerCase().includes(q);
+              !q ||
+              (inq.artistName || '').toLowerCase().includes(q) ||
+              (inq.releaseTitle || '').toLowerCase().includes(q) ||
+              (inq.email || '').toLowerCase().includes(q) ||
+              (inq.phone || '').toLowerCase().includes(q) ||
+              (inq.genre || '').toLowerCase().includes(q) ||
+              (inq.message || '').toLowerCase().includes(q);
             return matchesFilter && matchesSearch;
           });
 
@@ -5349,11 +5604,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredDistInquiries.map((inq) => {
+                  {filteredDistInquiries.map((inq, inqIdx) => {
                     const isReplying = replyDistInqId === inq.id;
                     return (
                       <div
-                        key={inq.id}
+                        key={`dist-inq-${inq.id || 'inq'}-${inqIdx}`}
                         className={`p-6 rounded-3xl bg-zinc-900/40 border transition-all space-y-4 ${
                           inq.status === 'new'
                             ? 'border-pink-500/50 shadow-lg shadow-pink-950/20 bg-gradient-to-r from-[#170313]/40 via-zinc-900/60 to-zinc-900/40'
@@ -5941,6 +6196,134 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 12: PASSWORD CHANGE DESK (অ্যাডমিন পাসওয়ার্ড পরিবর্তন)
+           ========================================================================= */}
+        {activeTab === 'password_change' && (
+          <div className="space-y-6 animate-fade-in max-w-3xl">
+            {/* Top Header Card */}
+            <div className="p-6 rounded-3xl bg-zinc-900/50 border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="inline-flex items-center gap-2 text-amber-400 text-xs font-mono uppercase tracking-wider font-bold">
+                  <KeyRound className="w-4 h-4 text-amber-400" />
+                  <span>OPTION 12: SECURITY DESK · অ্যাডমিন পাসওয়ার্ড পরিবর্তন</span>
+                </div>
+                <h3 className="font-display text-2xl font-bold text-white">
+                  Change Administrator Master Password
+                </h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  অ্যাডমিন প্যানেলের সিকিউরিটি বজায় রাখতে নিয়মিত পাসওয়ার্ড আপডেট করুন। পাসওয়ার্ড সর্বনিম্ন ৬ অক্ষরের হতে হবে।
+                </p>
+              </div>
+
+              <div className="px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-300 shrink-0">
+                Logged in as: <strong className="text-amber-400">{currentUser?.email || 'Super Admin'}</strong>
+              </div>
+            </div>
+
+            {/* Change Password Form Card */}
+            <div className="p-6 sm:p-8 rounded-3xl bg-zinc-950 border border-zinc-800 space-y-6 shadow-xl">
+              {adminPasswordModal.error && (
+                <div className="p-4 rounded-2xl bg-red-950/60 border border-red-500/50 text-red-200 text-xs flex items-center gap-2.5 animate-fade-in">
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                  <span>{adminPasswordModal.error}</span>
+                </div>
+              )}
+
+              {adminPasswordModal.success && (
+                <div className="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/50 text-emerald-200 text-xs flex items-center gap-2.5 animate-fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{adminPasswordModal.success}</span>
+                </div>
+              )}
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setAdminPasswordModal((prev) => ({ ...prev, error: null, success: null }));
+
+                  if (adminPasswordModal.newPass.length < 6) {
+                    setAdminPasswordModal((prev) => ({ ...prev, error: 'নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে (Minimum 6 characters).' }));
+                    return;
+                  }
+
+                  if (adminPasswordModal.newPass !== adminPasswordModal.confirmPass) {
+                    setAdminPasswordModal((prev) => ({ ...prev, error: 'নতুন পাসওয়ার্ড দুটি মেলেনি (New passwords do not match).' }));
+                    return;
+                  }
+
+                  setAdminPasswordModal((prev) => ({ ...prev, loading: true }));
+                  const res = await changePassword(adminPasswordModal.currentPass, adminPasswordModal.newPass);
+                  setAdminPasswordModal((prev) => ({
+                    ...prev,
+                    loading: false,
+                    error: res.success ? null : res.message,
+                    success: res.success ? '✅ অ্যাডমিন পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে (Password updated successfully)!' : null,
+                    currentPass: res.success ? '' : prev.currentPass,
+                    newPass: res.success ? '' : prev.newPass,
+                    confirmPass: res.success ? '' : prev.confirmPass,
+                  }));
+                }}
+                className="space-y-4 max-w-xl"
+              >
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-300">
+                    Current Admin Password (বর্তমান পাসওয়ার্ড) *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••••••"
+                    value={adminPasswordModal.currentPass}
+                    onChange={(e) => setAdminPasswordModal((prev) => ({ ...prev, currentPass: e.target.value }))}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-300">
+                    New Password (নতুন পাসওয়ার্ড) *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Minimum 6 characters"
+                    value={adminPasswordModal.newPass}
+                    onChange={(e) => setAdminPasswordModal((prev) => ({ ...prev, newPass: e.target.value }))}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                  />
+                  <p className="text-[10px] text-zinc-500">কমপক্ষে ৬টি বর্ণ বা সংখ্যা ব্যবহার করুন।</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-300">
+                    Confirm New Password (নতুন পাসওয়ার্ড নিশ্চিত করুন) *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Repeat new password"
+                    value={adminPasswordModal.confirmPass}
+                    onChange={(e) => setAdminPasswordModal((prev) => ({ ...prev, confirmPass: e.target.value }))}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={adminPasswordModal.loading}
+                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-black font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-400/20 cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {adminPasswordModal.loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    <span>{adminPasswordModal.loading ? 'Updating Password...' : 'Save New Password (পাসওয়ার্ড সংরক্ষণ করুন)'}</span>
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

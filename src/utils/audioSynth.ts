@@ -12,15 +12,17 @@ class AudioSynthEngine {
   private masterGain: GainNode | null = null;
 
   private initContext() {
-    if (!this.ctx) {
+    if (!this.ctx && typeof window !== 'undefined') {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      this.ctx = new AudioContextClass();
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-      this.masterGain.connect(this.ctx.destination);
+      if (AudioContextClass) {
+        this.ctx = new AudioContextClass();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        this.masterGain.connect(this.ctx.destination);
+      }
     }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
     }
   }
 

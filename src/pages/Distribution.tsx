@@ -140,24 +140,15 @@ export const Distribution: React.FC = () => {
                 <ExternalLink className="w-3.5 h-3.5 text-black" />
               </a>
 
-              {/* 2. Contact FK Music Desk (WhatsApp: 01723138736) */}
+              {/* 2. Contact Rasel Babu Desk (WhatsApp: 01723138736) */}
               <a
-                href="https://wa.me/8801723138736?text=Hello%20Rasel%20Babu%20/%20FK%20Music%20Desk,%20I%20want%20to%20distribute%20my%20music"
+                href="https://wa.me/8801723138736?text=Hello%20Rasel%20Babu%20Desk,%20I%20want%20to%20distribute%20my%20music"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/25 transition-all cursor-pointer"
               >
                 <MessageCircle className="w-4 h-4 text-white" />
-                <span>Contact FK Music Desk (01723138736)</span>
-              </a>
-
-              {/* 3. FK Music Support Email */}
-              <a
-                href="mailto:support@fkmusicltd.com?subject=Music%20Distribution%20Inquiry%20via%20Rasel%20Babu%20Portal"
-                className="px-6 py-2.5 rounded-xl bg-[#2b0424] hover:bg-[#38062e] text-amber-200 border border-amber-400/30 text-xs font-mono font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
-              >
-                <Mail className="w-3.5 h-3.5 text-amber-400" />
-                <span>support@fkmusicltd.com</span>
+                <span>Contact Rasel Babu Desk (01723138736)</span>
               </a>
             </div>
           </div>
@@ -428,7 +419,7 @@ export const Distribution: React.FC = () => {
                 FK Music Limited Support &amp; Official Portal
               </h3>
               <p className="text-xs sm:text-sm text-pink-100/70 max-w-xl leading-relaxed">
-                ডিস্ট্রিবিউশন সংক্রান্ত যেকোনো প্রশ্ন, রয়্যালটি সাপোর্ট বা স্পন্সরশিপের জন্য FK Music Limited-এর অফিশিয়াল সাপোর্ট ইমেইল অথবা হোয়াটসঅ্যাপে যোগাযোগ করুন।
+                ডিস্ট্রিবিউশন সংক্রান্ত যেকোনো প্রশ্ন, রয়্যালটি সাপোর্ট বা স্পন্সরশিপের জন্য হোয়াটসঅ্যাপ অথবা ওয়েবসাইটের মাধ্যমে যোগাযোগ করুন।
               </p>
             </div>
 
@@ -445,15 +436,7 @@ export const Distribution: React.FC = () => {
               </a>
 
               <a
-                href="mailto:support@fkmusicltd.com?subject=FK%20Music%20Support%20Inquiry"
-                className="px-5 py-3.5 rounded-xl bg-[#2b0424] hover:bg-[#38062e] text-amber-200 border border-pink-500/40 text-xs font-mono font-medium flex items-center gap-2 transition-colors cursor-pointer"
-              >
-                <Mail className="w-4 h-4 text-pink-400" />
-                <span>support@fkmusicltd.com</span>
-              </a>
-
-              <a
-                href="https://wa.me/8801723138736?text=Hello%20Rasel%20Babu,%20FK%20Music%20Support"
+                href="https://wa.me/8801723138736?text=Hello%20Rasel%20Babu%20Desk,%20Music%20Distribution%20Support"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-5 py-3.5 rounded-xl bg-emerald-700/80 hover:bg-emerald-600 text-white text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"

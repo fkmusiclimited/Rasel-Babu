@@ -73,11 +73,47 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ onOrderN
 
   const effectivePrice = hasOffer ? viewingProduct.offerPrice : viewingProduct.price;
 
-  const handleCopyShare = () => {
-    const shareText = `${viewingProduct.title} - ${effectivePrice} ${viewingProduct.currency} | Rasel Babu Official Store`;
-    navigator.clipboard?.writeText(window.location.origin + '/shop?product=' + viewingProduct.id);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
+  const shareUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/?product=${encodeURIComponent(viewingProduct.id)}`
+      : `https://raselbabu.com/?product=${encodeURIComponent(viewingProduct.id)}`;
+
+  const handleCopyShare = async () => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch (err) {
+      console.warn('Failed to copy share link:', err);
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    const priceText = typeof effectivePrice === 'number' ? `৳${effectivePrice.toLocaleString()}` : '';
+    const text = encodeURIComponent(
+      `${viewingProduct.title}${priceText ? ' - ' + priceText : ''}\nRasel Babu Official Store\n\n${shareUrl}`
+    );
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleShareFacebook = () => {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
   const handleOrderClick = () => {
@@ -323,7 +359,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ onOrderN
 
             {/* Bottom Action Buttons */}
             <div className="space-y-3 pt-2">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={handleOrderClick}
                   disabled={!viewingProduct.inStock}
@@ -339,9 +375,28 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ onOrderN
 
                 <button
                   type="button"
+                  onClick={handleShareWhatsApp}
+                  className="px-3 py-3 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Share to WhatsApp"
+                >
+                  <Share2 className="w-4 h-4 text-emerald-400" />
+                  <span className="hidden sm:inline">WhatsApp</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleShareFacebook}
+                  className="px-3 py-3 rounded-2xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Share to Facebook"
+                >
+                  <span className="hidden sm:inline">Facebook</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleCopyShare}
                   className="p-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                  title="Share Product (প্রোডাক্ট লিংক কপি)"
+                  title="Copy Product Link"
                 >
                   {copiedLink ? (
                     <Check className="w-4 h-4 text-emerald-400" />
