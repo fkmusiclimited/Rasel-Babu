@@ -413,7 +413,7 @@ export const INITIAL_NEWS: NewsArticle[] = [
     slug: 'nationwide-tour-announcement-2026',
     summary: 'Spanning 8 divisions across Bangladesh, the tour will bring arena-level sound, immersive visuals, and guest folk legends to Dhaka, Chittagong, Sylhet, and Khulna.',
     content: `Rasel Babu has officially unveiled dates for his flagship 2026 concert tour titled "Shonar Sure" (In Golden Melodies). Following the monumental success of his latest album release, the artist and his live touring ensemble will stage massive audio-visual performances.\n\n"Every performance is an opportunity to connect with the soul of our audience," Rasel Babu shared in a press conference in Dhaka. "We have crafted a brand-new live set that marries traditional folk instruments—dotara, esraj, bansuri—with punchy modern stadium sound."\n\nTicket reservations and VIP passes will be available through the official portal. Fans registered on the website receive early-bird notification.`,
-    coverImage: HERO_STAGE_IMAGE,
+    coverImage: FAN_CONCERT_IMAGE,
     publishDate: '2026-01-15',
     category: 'Concert Tour',
     author: 'Management Media Desk',

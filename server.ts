@@ -1338,42 +1338,123 @@ app.get('/api/og-image', (req, res) => {
 // ---------------------------------------------------------------------------
 // Server-Side Open Graph & Twitter Card Metadata Resolution & Injection
 // ---------------------------------------------------------------------------
+const INITIAL_NEWS_FALLBACK = [
+  {
+    id: 'news-1',
+    title: 'Rasel Babu Announces "Shonar Sure" 2026 Nationwide Tour',
+    slug: 'nationwide-tour-announcement-2026',
+    summary: 'Spanning 8 divisions across Bangladesh, the tour will bring arena-level sound, immersive visuals, and guest folk legends to Dhaka, Chittagong, Sylhet, and Khulna.',
+    content: 'Rasel Babu has officially unveiled dates for his flagship 2026 concert tour titled "Shonar Sure" (In Golden Melodies). Following the monumental success of his latest album release, the artist and his live touring ensemble will stage massive audio-visual performances.\n\n"Every performance is an opportunity to connect with the soul of our audience," Rasel Babu shared in a press conference in Dhaka. "We have crafted a brand-new live set that marries traditional folk instruments—dotara, esraj, bansuri—with punchy modern stadium sound."\n\nTicket reservations and VIP passes will be available through the official portal. Fans registered on the website receive early-bird notification.',
+    coverImage: '/assets/images/rasel_babu_fan_concert_1791914990421.jpg',
+    publishDate: '2026-01-15',
+    category: 'Concert Tour',
+    author: 'Management Media Desk',
+    readTime: '3 min read',
+  },
+  {
+    id: 'news-2',
+    title: 'Behind the Scenes: Rasel Babu Crosses 3.5 Million Streaming Milestone',
+    slug: 'streaming-milestone-3-5-million',
+    summary: 'Spotify and YouTube Music officially recognize Rasel Babu as one of the fastest-growing independent contemporary Bengali vocalists.',
+    content: 'With over 3.5 million verified audio streams across digital streaming platforms, Rasel Babu continues to establish himself as a defining voice of contemporary Bengali melody.\n\nCritics have praised his warm baritone range, poetic diction, and dedication to authentic acoustic musicality rather than synthetic auto-tune tropes.\n\n"Music has no borders. When listeners in London, Toronto, Kolkata, and Sylhet sing along to the same melody, it proves that authentic Bengali emotion speaks everywhere."',
+    coverImage: '/assets/images/album_cover_melodies_1791912892563.jpg',
+    publishDate: '2025-12-22',
+    category: 'Industry Milestone',
+    author: 'Music Review Desk',
+    readTime: '4 min read',
+  },
+  {
+    id: 'news-3',
+    title: 'Playback Vocal Debut in Upcoming National Feature Film',
+    slug: 'film-playback-debut-announcement',
+    summary: 'Rasel Babu records the title romantic anthem for an eagerly awaited cinematic drama set for release later this year.',
+    content: 'Acclaimed film director and music director duo have confirmed Rasel Babu as the primary playback vocalist for the cinematic title track of their upcoming feature film.\n\nThe song, recorded at Studio Resonance in Dhaka, combines a lush 40-piece live string orchestra with Rasel Babu\'s emotive vocal expression.',
+    coverImage: '/assets/images/rasel_babu_portrait_1791912893579.jpg',
+    publishDate: '2025-11-04',
+    category: 'Film & Media',
+    author: 'Press Bureau',
+    readTime: '2 min read',
+  },
+];
+
 function readNews(): any[] {
   try {
     if (fs.existsSync(NEWS_FILE)) {
-      return JSON.parse(fs.readFileSync(NEWS_FILE, 'utf-8'));
-    }
-    const pub = path.resolve('public', 'news.json');
-    if (fs.existsSync(pub)) {
-      return JSON.parse(fs.readFileSync(pub, 'utf-8'));
+      const data = JSON.parse(fs.readFileSync(NEWS_FILE, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
     }
   } catch {}
-  return [];
+
+  try {
+    const pub = path.resolve('public', 'news.json');
+    if (fs.existsSync(pub)) {
+      const data = JSON.parse(fs.readFileSync(pub, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
+
+  try {
+    const dist = path.resolve('dist', 'news.json');
+    if (fs.existsSync(dist)) {
+      const data = JSON.parse(fs.readFileSync(dist, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
+
+  return INITIAL_NEWS_FALLBACK;
 }
 
 function readProducts(): any[] {
   try {
     if (fs.existsSync(PRODUCTS_FILE)) {
-      return JSON.parse(fs.readFileSync(PRODUCTS_FILE, 'utf-8'));
-    }
-    const pub = path.resolve('public', 'products.json');
-    if (fs.existsSync(pub)) {
-      return JSON.parse(fs.readFileSync(pub, 'utf-8'));
+      const data = JSON.parse(fs.readFileSync(PRODUCTS_FILE, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
     }
   } catch {}
+
+  try {
+    const pub = path.resolve('public', 'products.json');
+    if (fs.existsSync(pub)) {
+      const data = JSON.parse(fs.readFileSync(pub, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
+
+  try {
+    const dist = path.resolve('dist', 'products.json');
+    if (fs.existsSync(dist)) {
+      const data = JSON.parse(fs.readFileSync(dist, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
+
   return [];
 }
 
 function readPhotos(): any[] {
   try {
     if (fs.existsSync(PHOTOS_FILE)) {
-      return JSON.parse(fs.readFileSync(PHOTOS_FILE, 'utf-8'));
-    }
-    const pub = path.resolve('public', 'photos.json');
-    if (fs.existsSync(pub)) {
-      return JSON.parse(fs.readFileSync(pub, 'utf-8'));
+      const data = JSON.parse(fs.readFileSync(PHOTOS_FILE, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
     }
   } catch {}
+
+  try {
+    const pub = path.resolve('public', 'photos.json');
+    if (fs.existsSync(pub)) {
+      const data = JSON.parse(fs.readFileSync(pub, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
+
+  try {
+    const dist = path.resolve('dist', 'photos.json');
+    if (fs.existsSync(dist)) {
+      const data = JSON.parse(fs.readFileSync(dist, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
+
   return [];
 }
 
@@ -1382,11 +1463,22 @@ function readSettings(): any {
     if (fs.existsSync(SETTINGS_FILE)) {
       return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
     }
+  } catch {}
+
+  try {
     const pub = path.resolve('public', 'settings.json');
     if (fs.existsSync(pub)) {
       return JSON.parse(fs.readFileSync(pub, 'utf-8'));
     }
   } catch {}
+
+  try {
+    const dist = path.resolve('dist', 'settings.json');
+    if (fs.existsSync(dist)) {
+      return JSON.parse(fs.readFileSync(dist, 'utf-8'));
+    }
+  } catch {}
+
   return null;
 }
 
@@ -1415,17 +1507,22 @@ function makeAbsoluteImageUrl(
   id: string,
   baseUrl: string
 ): string {
-  // If base64 data URI, WhatsApp / Facebook crawlers cannot render it: route via /api/og-image
-  if (imgUrl && imgUrl.startsWith('data:image/')) {
+  if (!imgUrl) {
+    return `${baseUrl}/assets/images/hero_rasel_babu_stage_1791912890551.jpg`;
+  }
+
+  // If base64 data URI, WhatsApp / Facebook crawlers cannot render base64 directly: route via binary /api/og-image
+  if (imgUrl.startsWith('data:image/')) {
     return `${baseUrl}/api/og-image?type=${type}&id=${encodeURIComponent(id)}`;
   }
 
-  if (imgUrl && (imgUrl.startsWith('https://') || imgUrl.startsWith('http://'))) {
+  // Full external URL
+  if (imgUrl.startsWith('https://') || imgUrl.startsWith('http://')) {
     return imgUrl.replace(/^http:\/\//i, 'https://');
   }
 
-  let cleanPath = imgUrl || '/assets/images/hero_rasel_babu_stage_1791912890551.jpg';
-  cleanPath = cleanPath.replace(/^\/(src\/)?assets\//, '/assets/');
+  // Relative path cleanup
+  let cleanPath = imgUrl.replace(/^\/?(src\/)?assets\//, '/assets/');
   if (!cleanPath.startsWith('/')) {
     cleanPath = '/' + cleanPath;
   }
@@ -1434,42 +1531,56 @@ function makeAbsoluteImageUrl(
 
 interface ResolvedMetadata {
   title: string;
+  ogTitle: string;
   description: string;
   imageUrl: string;
   url: string;
-  type: string;
+  type: 'website' | 'article' | 'product';
   itemType: 'news' | 'product' | 'photo' | 'home';
   item?: any;
 }
 
 function resolveMetadataForRequest(req: express.Request): ResolvedMetadata {
   const baseUrl = getCanonicalBaseUrl(req);
-  const pathName = req.path;
-  const qNews = req.query.news ? String(req.query.news) : null;
-  const qProduct = req.query.product ? String(req.query.product) : null;
-  const qPhoto = req.query.photo ? String(req.query.photo) : null;
-  const qId = req.query.id ? String(req.query.id) : null;
+  const pathName = (req.path || '/').replace(/\/+$/, '') || '/';
+  const qNews = req.query.news ? String(req.query.news).trim() : null;
+  const qArticle = req.query.article ? String(req.query.article).trim() : null;
+  const qProduct = req.query.product ? String(req.query.product).trim() : null;
+  const qPhoto = req.query.photo ? String(req.query.photo).trim() : null;
+  const qId = req.query.id ? String(req.query.id).trim() : null;
 
-  // 1. Check News Article (?news=id, /news-detail?news=id, /news/:id, /news?id=id)
-  let newsId = qNews;
+  // 1. Check News Article (?news=id, ?article=id, /news-detail?news=id, /news/:id, /news?id=id)
+  let newsId = qNews || qArticle;
   if (!newsId && (pathName === '/news-detail' || pathName === '/news') && qId) {
     newsId = qId;
   } else if (!newsId && pathName.startsWith('/news-detail/')) {
     newsId = pathName.replace('/news-detail/', '');
-  } else if (!newsId && pathName.startsWith('/news/') && pathName !== '/news/') {
+  } else if (!newsId && pathName.startsWith('/news/') && pathName !== '/news') {
     newsId = pathName.replace('/news/', '');
   }
 
   if (newsId) {
+    try {
+      newsId = decodeURIComponent(newsId);
+    } catch {}
     const allNews = readNews();
-    const article = allNews.find((n: any) => n.id === newsId || n.slug === newsId);
+    const article = allNews.find(
+      (n: any) =>
+        String(n.id).trim().toLowerCase() === newsId!.toLowerCase() ||
+        (n.slug && String(n.slug).trim().toLowerCase() === newsId!.toLowerCase())
+    );
+
     if (article) {
-      const title = `${article.title} | Rasel Babu Official News`;
-      const description = article.summary || article.content.slice(0, 160);
+      const exactTitle = article.title;
+      const pageTitle = `${article.title} | Rasel Babu Official News`;
+      const description =
+        article.summary || (article.content ? article.content.replace(/\s+/g, ' ').slice(0, 200).trim() : '');
       const imageUrl = makeAbsoluteImageUrl(article.coverImage, 'news', article.id, baseUrl);
       const url = `${baseUrl}/?news=${encodeURIComponent(article.id)}`;
+
       return {
-        title,
+        title: pageTitle,
+        ogTitle: exactTitle,
         description,
         imageUrl,
         url,
@@ -1484,24 +1595,30 @@ function resolveMetadataForRequest(req: express.Request): ResolvedMetadata {
   let productId = qProduct;
   if (!productId && (pathName === '/shop' || pathName === '/product' || pathName === '/product-detail') && qId) {
     productId = qId;
-  } else if (!productId && pathName.startsWith('/product-detail/') && pathName !== '/product-detail/') {
+  } else if (!productId && pathName.startsWith('/product-detail/') && pathName !== '/product-detail') {
     productId = pathName.replace('/product-detail/', '');
-  } else if (!productId && pathName.startsWith('/product/') && pathName !== '/product/') {
+  } else if (!productId && pathName.startsWith('/product/') && pathName !== '/product') {
     productId = pathName.replace('/product/', '');
   }
 
   if (productId) {
+    try {
+      productId = decodeURIComponent(productId);
+    } catch {}
     const allProducts = readProducts();
-    const product = allProducts.find((p: any) => p.id === productId);
+    const product = allProducts.find((p: any) => String(p.id).trim().toLowerCase() === productId!.toLowerCase());
     if (product) {
       const priceVal = product.offerPrice || product.price;
       const priceFormatted = typeof priceVal === 'number' ? `৳${priceVal.toLocaleString()}` : '';
-      const title = `${product.title}${priceFormatted ? ' - ' + priceFormatted : ''} | Rasel Babu Official Store`;
-      const description = product.description;
+      const exactTitle = `${product.title}${priceFormatted ? ' (' + priceFormatted + ')' : ''}`;
+      const pageTitle = `${exactTitle} | Rasel Babu Official Store`;
+      const description = product.description || 'Official merchandise from Rasel Babu store.';
       const imageUrl = makeAbsoluteImageUrl(product.imageUrl, 'product', product.id, baseUrl);
       const url = `${baseUrl}/?product=${encodeURIComponent(product.id)}`;
+
       return {
-        title,
+        title: pageTitle,
+        ogTitle: exactTitle,
         description,
         imageUrl,
         url,
@@ -1516,22 +1633,28 @@ function resolveMetadataForRequest(req: express.Request): ResolvedMetadata {
   let photoId = qPhoto;
   if (!photoId && (pathName === '/photo-detail' || pathName === '/gallery') && qId) {
     photoId = qId;
-  } else if (!photoId && pathName.startsWith('/photo-detail/')) {
+  } else if (!photoId && pathName.startsWith('/photo-detail/') && pathName !== '/photo-detail') {
     photoId = pathName.replace('/photo-detail/', '');
-  } else if (!photoId && pathName.startsWith('/photo/') && pathName !== '/photo/') {
+  } else if (!photoId && pathName.startsWith('/photo/') && pathName !== '/photo') {
     photoId = pathName.replace('/photo/', '');
   }
 
   if (photoId) {
+    try {
+      photoId = decodeURIComponent(photoId);
+    } catch {}
     const allPhotos = readPhotos();
-    const photo = allPhotos.find((p: any) => p.id === photoId);
+    const photo = allPhotos.find((p: any) => String(p.id).trim().toLowerCase() === photoId!.toLowerCase());
     if (photo) {
-      const title = `${photo.title} - Official Photo Gallery | Rasel Babu`;
-      const description = photo.caption || `${photo.title} captured in ${photo.location}`;
+      const exactTitle = photo.title;
+      const pageTitle = `${photo.title} - Official Photo Gallery | Rasel Babu`;
+      const description = photo.caption || `${photo.title} captured in ${photo.location || 'Dhaka, Bangladesh'}`;
       const imageUrl = makeAbsoluteImageUrl(photo.imageUrl, 'photo', photo.id, baseUrl);
       const url = `${baseUrl}/?photo=${encodeURIComponent(photo.id)}`;
+
       return {
-        title,
+        title: pageTitle,
+        ogTitle: exactTitle,
         description,
         imageUrl,
         url,
@@ -1551,6 +1674,7 @@ function resolveMetadataForRequest(req: express.Request): ResolvedMetadata {
 
   return {
     title: defaultTitle,
+    ogTitle: defaultTitle,
     description: defaultDescription,
     imageUrl: defaultImage,
     url: defaultUrl,
@@ -1561,6 +1685,7 @@ function resolveMetadataForRequest(req: express.Request): ResolvedMetadata {
 
 function injectMetadata(html: string, meta: ResolvedMetadata): string {
   const safeTitle = escapeHtml(meta.title);
+  const safeOgTitle = escapeHtml(meta.ogTitle || meta.title);
   const safeDesc = escapeHtml(meta.description);
   const safeImage = meta.imageUrl;
   const safeUrl = meta.url;
@@ -1586,10 +1711,10 @@ function injectMetadata(html: string, meta: ResolvedMetadata): string {
     html = html.replace('</head>', `<meta name="description" content="${safeDesc}" />\n</head>`);
   }
 
-  // 4. Replace or insert Open Graph tags
+  // 4. Open Graph meta tags dictionary
   const ogTags: Record<string, string> = {
     'og:type': meta.type,
-    'og:title': safeTitle,
+    'og:title': safeOgTitle,
     'og:description': safeDesc,
     'og:url': safeUrl,
     'og:site_name': 'Rasel Babu Official',
@@ -1597,7 +1722,21 @@ function injectMetadata(html: string, meta: ResolvedMetadata): string {
     'og:image:secure_url': safeImage,
     'og:image:width': '1200',
     'og:image:height': '630',
+    'og:image:type': 'image/jpeg',
+    'og:image:alt': safeOgTitle,
   };
+
+  if (meta.itemType === 'news' && meta.item) {
+    if (meta.item.publishDate) {
+      ogTags['article:published_time'] = meta.item.publishDate;
+    }
+    if (meta.item.author) {
+      ogTags['article:author'] = meta.item.author;
+    }
+    if (meta.item.category) {
+      ogTags['article:section'] = meta.item.category;
+    }
+  }
 
   for (const [prop, val] of Object.entries(ogTags)) {
     const reg = new RegExp(`<meta\\s+property=["']${prop}["'][^>]*>`, 'i');
@@ -1608,10 +1747,10 @@ function injectMetadata(html: string, meta: ResolvedMetadata): string {
     }
   }
 
-  // 5. Replace or insert Twitter Card tags
+  // 5. Twitter Card meta tags dictionary
   const twitterTags: Record<string, string> = {
     'twitter:card': 'summary_large_image',
-    'twitter:title': safeTitle,
+    'twitter:title': safeOgTitle,
     'twitter:description': safeDesc,
     'twitter:image': safeImage,
   };
@@ -1625,6 +1764,41 @@ function injectMetadata(html: string, meta: ResolvedMetadata): string {
     }
   }
 
+  // 6. Schema.org JSON-LD structured data for News articles
+  if (meta.itemType === 'news' && meta.item) {
+    const jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'NewsArticle',
+      headline: safeOgTitle,
+      description: safeDesc,
+      image: [safeImage],
+      datePublished: meta.item.publishDate || new Date().toISOString(),
+      author: {
+        '@type': 'Person',
+        name: meta.item.author || 'Rasel Babu Official Media Desk',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Rasel Babu Official',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://raselbabu.com/000111.jpg',
+        },
+      },
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': safeUrl,
+      },
+    };
+
+    const jsonLdScript = `<script type="application/ld+json">\n${JSON.stringify(jsonLd, null, 2)}\n</script>`;
+    if (/<script\s+type=["']application\/ld\+json["']>[\s\S]*?<\/script>/i.test(html)) {
+      html = html.replace(/<script\s+type=["']application\/ld\+json["']>[\s\S]*?<\/script>/i, jsonLdScript);
+    } else {
+      html = html.replace('</head>', `${jsonLdScript}\n</head>`);
+    }
+  }
+
   return html;
 }
 
@@ -1632,20 +1806,36 @@ function injectMetadata(html: string, meta: ResolvedMetadata): string {
 // Mounting Vite (Dev) or Static Assets (Prod) with Meta Pre-Rendering
 // ---------------------------------------------------------------------------
 async function startServer() {
+  // Static asset fallbacks for reliable image and media delivery across environments
+  app.use('/assets', express.static(path.resolve('dist', 'assets')));
+  app.use('/assets', express.static(path.resolve('public', 'assets')));
+  app.use('/assets', express.static(path.resolve('src', 'assets')));
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
 
-    // Special crawler interceptor for testing social link previews in dev (e.g. WhatsApp, Facebook crawler or ?crawler=1)
+    // Crawler and link preview pre-renderer in dev (WhatsApp, Facebook, Messenger, Twitter, Discord, etc.)
     app.use(async (req, res, next) => {
       const userAgent = req.headers['user-agent'] || '';
       const isCrawler =
-        /facebookexternalhit|WhatsApp|Facebot|Twitterbot|TelegramBot|LinkedInBot|Discordbot/i.test(userAgent) ||
-        req.query.crawler === '1';
+        /facebookexternalhit|WhatsApp|Facebot|Twitterbot|TelegramBot|LinkedInBot|Discordbot|meta-externalagent|FacebookBot|Slackbot|Googlebot|Pinterest|SkypeUriPreview/i.test(
+          userAgent
+        ) || req.query.crawler === '1';
 
-      if (isCrawler && req.method === 'GET' && !req.originalUrl.startsWith('/api/')) {
+      const isContentShareLink = Boolean(
+        req.query.news ||
+        req.query.article ||
+        req.query.product ||
+        req.query.photo ||
+        req.path.startsWith('/news') ||
+        req.path.startsWith('/product') ||
+        req.path.startsWith('/photo')
+      );
+
+      if ((isCrawler || isContentShareLink) && req.method === 'GET' && !req.originalUrl.startsWith('/api/') && !req.originalUrl.includes('.')) {
         try {
           const indexPath = path.resolve('index.html');
           const rawTemplate = fs.readFileSync(indexPath, 'utf-8');
@@ -1664,7 +1854,9 @@ async function startServer() {
   } else {
     const distPath = path.resolve('dist');
     app.use(express.static(distPath, { index: false }));
+    app.use(express.static(path.resolve('public'), { index: false }));
 
+    // Production Server-Side Pre-Rendering for crawlers and all visitors
     app.get('*', (req, res) => {
       const indexPath = path.join(distPath, 'index.html');
       if (!fs.existsSync(indexPath)) {
@@ -1673,7 +1865,10 @@ async function startServer() {
       const rawTemplate = fs.readFileSync(indexPath, 'utf-8');
       const meta = resolveMetadataForRequest(req);
       const finalHtml = injectMetadata(rawTemplate, meta);
-      res.status(200).set({ 'Content-Type': 'text/html; charset=utf-8' }).send(finalHtml);
+      res.status(200).set({
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': meta.itemType === 'home' ? 'public, max-age=3600' : 'public, max-age=300, must-revalidate',
+      }).send(finalHtml);
     });
   }
 

@@ -37,7 +37,13 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({ newsId, onNavigate }) =>
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [newsId]);
+    if (article) {
+      document.title = `${article.title} | Rasel Babu Official News`;
+    }
+    return () => {
+      document.title = 'Rasel Babu | Official Artist Website & Music Portal';
+    };
+  }, [newsId, article]);
 
   const handleCopyLink = async () => {
     try {
